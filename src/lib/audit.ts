@@ -66,6 +66,7 @@ export async function writeAudit(
       nonce,
       ipAddress: input.ipAddress ?? null,
       userAgent: input.userAgent ?? null,
+      createdAt: new Date(createdAt), // pass explicitly so it matches the hash
     },
   });
 

@@ -7,7 +7,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/votewise/primitives/theme-toggle";
-import { ShieldCheck, LayoutDashboard, Vote, Users, Settings, LogOut, ExternalLink, Megaphone, Flag, Menu, X, CreditCard, UserPlus, BarChart3, Webhook, Lock, Key, Eye, Bell, Globe } from "lucide-react";
+import { ShieldCheck, LayoutDashboard, Vote, Users, Settings, LogOut, ExternalLink, Megaphone, Flag, Menu, X, CreditCard, UserPlus, BarChart3, Webhook, Lock, Key, Eye, Bell, Globe, ScrollText, Calendar } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   Sheet, SheetContent, SheetTrigger, SheetTitle,
@@ -17,10 +17,12 @@ const NAV = [
   { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { label: "Observer", href: "/dashboard/observer", icon: Eye },
   { label: "Elections", href: "/dashboard/elections", icon: Vote },
+  { label: "Calendar", href: "/dashboard/calendar", icon: Calendar },
   { label: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
   { label: "Notifications", href: "/dashboard/notifications", icon: Bell },
   { label: "Announcements", href: "/dashboard/announcements", icon: Megaphone },
   { label: "Incidents", href: "/dashboard/incidents", icon: Flag },
+  { label: "Audit Log", href: "/dashboard/audit-log", icon: ScrollText },
   { label: "Members", href: "/dashboard/members", icon: UserPlus },
   { label: "Webhooks", href: "/dashboard/webhooks", icon: Webhook },
   { label: "API Keys", href: "/dashboard/api-keys", icon: Key },

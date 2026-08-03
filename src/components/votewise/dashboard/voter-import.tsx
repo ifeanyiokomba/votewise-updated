@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { UploadCloud, FileText, Users, X } from "lucide-react";
+import { UploadCloud, FileText, Users, X, Download } from "lucide-react";
 
 interface VoterRow {
   identifier: string;
@@ -83,9 +83,16 @@ export function VoterImport({ electionId }: { electionId: string }) {
   return (
     <Card>
       <CardContent className="p-5">
-        <h3 className="vw-display text-sm mb-2 flex items-center gap-2">
-          <Users className="size-4" /> Import voters
-        </h3>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="vw-display text-sm flex items-center gap-2">
+            <Users className="size-4" /> Import voters
+          </h3>
+          <Button asChild size="sm" variant="ghost">
+            <a href="/api/dashboard/voters/template" download>
+              <Download className="size-3.5" /> Template
+            </a>
+          </Button>
+        </div>
         <p className="mb-3 text-xs text-muted-foreground">
           Upload a CSV file or paste data. Header: <code className="vw-mono">identifier,fullName,email</code>
         </p>
