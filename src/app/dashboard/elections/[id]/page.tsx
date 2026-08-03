@@ -13,8 +13,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageLoader, EmptyState } from "@/components/votewise/primitives/section";
 import { ElectionMonitor } from "@/components/votewise/dashboard/election-monitor";
 import { VotersTab } from "@/components/votewise/dashboard/voters-tab";
+import { VoterImport } from "@/components/votewise/dashboard/voter-import";
 import { formatNumber, formatPercent, formatDateTime } from "@/lib/utils";
-import { Play, Pause, X, CheckCircle2, CalendarClock, Plus, Trash2, Users, Vote, Settings, Activity, Download, FileText, Copy } from "lucide-react";
+import { Play, Pause, X, CheckCircle2, CalendarClock, Plus, Trash2, Users, Vote, Settings, Activity, Download, FileText, Copy, ShieldCheck } from "lucide-react";
+import Link from "next/link";
 
 interface ElectionData {
   ok: boolean;
@@ -174,6 +176,11 @@ export default function ManageElectionPage() {
           <Button variant="outline" size="sm" onClick={() => cloneMut.mutate()} disabled={cloneMut.isPending}>
             <Copy className="size-3.5" /> {cloneMut.isPending ? "Cloning…" : "Clone"}
           </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/dashboard/rla/${election.id}`}>
+              <ShieldCheck className="size-3.5" /> Audit
+            </Link>
+          </Button>
         </div>
       </div>
 
@@ -269,14 +276,7 @@ export default function ManageElectionPage() {
         {/* voters */}
         <TabsContent value="voters" className="mt-4">
           {election.status === "DRAFT" ? (
-            <Card><CardContent className="p-5">
-              <h3 className="vw-display text-sm mb-2">Import voters (CSV)</h3>
-              <p className="mb-3 text-xs text-muted-foreground">Header: identifier,fullName,email</p>
-              <Textarea rows={8} value={voterCsv} onChange={(e) => setVoterCsv(e.target.value)} className="vw-mono text-xs" />
-              <Button className="mt-3" onClick={() => importVoters.mutate()} disabled={importVoters.isPending}>
-                <Users className="size-4" /> {importVoters.isPending ? "Importing…" : "Import voters"}
-              </Button>
-            </CardContent></Card>
+            <VoterImport electionId={election.id} />
           ) : (
             <VotersTab electionId={election.id} canImport={false} />
           )}
