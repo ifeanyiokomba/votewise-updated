@@ -214,3 +214,71 @@ Stage Summary:
   4. Mobile responsiveness audit on new pages (observe, archive, settings, incidents)
   5. Export election results as PDF/CSV
   6. Voter search/filter in dashboard voters tab
+
+---
+Task ID: CRON-QA-R4
+Agent: Z.ai Code (webDevReview cron)
+Task: Round 4 — Voter-facing announcements, results export, voter search/filter
+
+Work Log:
+- Reviewed worklog.md (CRON-QA-R3). Project stable with 8 feature areas.
+- Performed QA: all services healthy (app uptime 255s, results-service running), lint clean, all routes returning 200.
+- Identified highest-impact gaps from R3 recommendations:
+  1. Announcements were admin-only — voters couldn't see them (clear product gap)
+  2. No results export — important for transparency/audit
+  3. No voter search — unusable for large voter rolls
+
+New features built:
+1. Voter-facing announcements on org portal
+   - New public API: GET /api/portal/[subdomain]/announcements (no auth, returns active non-expired announcements)
+   - Portal page fetches announcements and displays them in a "Latest updates" section between quick-actions and elections list
+   - Severity-coded cards: CRITICAL (red border), WARNING (amber border), INFO (blue border)
+   - Each card shows title, body, associated election name, and publish timestamp
+2. Election results export (CSV)
+   - New API: GET /api/dashboard/elections/[id]/export?format=csv
+   - Returns a proper CSV file with:
+     - Metadata header (election name, status, start/end times, total votes, eligible, turnout, generation timestamp)
+     - Results section: position, candidate, votes, percentage
+     - Voter section: identifier, full name, status (VOTED/NOT_VOTED), voted-at timestamp (anonymized — no receipt codes or candidate choices)
+   - Download button on manage page header (next to lifecycle action) and in voters tab
+   - Also supports JSON format via ?format=json
+3. Voter search/filter in dashboard
+   - Enhanced voters API: GET /api/dashboard/elections/[id]/voters?q=<search>&status=<voted|not_voted>
+   - New VotersTab component with:
+     - 4 stats cards (eligible, voted, not voted, turnout %)
+     - Debounced text search (300ms) across name, identifier, email, phone
+     - Status filter buttons (All / Voted / Not voted)
+     - Export CSV button
+     - Sortable voter table with: name (with flagged indicator), identifier, contact, vote status badge + timestamp
+   - Replaces the old static "X voters are eligible" text
+
+Bug fixes:
+- Export route was returning a raw Response object inside the api() wrapper, which converted it to JSON {} (empty object). Fixed by bypassing the api() wrapper and using direct NextResponse/Response with manual auth + error handling.
+- Voters API POST handler (import voters) was accidentally overwritten when adding the GET search endpoint. Restored it with the original upsert + eligibility-linking logic plus a DRAFT-only guard.
+
+Styling improvements:
+- Announcement cards on portal use left-border accent (border-l-4) with severity-coded colors
+- Voters tab stats cards use vw-interactive hover + icon-coded categories
+- Voter table with hover row highlight, responsive column hiding on mobile (identifier hidden on <sm, contact hidden on <md)
+- Vote status badges: green pill with checkmark for voted, muted pill with clock for pending
+- Flagged voters show a red flag icon + reason text
+
+Verification (agent-browser):
+- Portal announcements: page shows "Latest updates" section with "Voting opens at 9:00 AM" (INFO) card
+- Voters tab: shows 15 eligible, 3 voted, 12 pending, 20.0% turnout
+- Search: typed "Aisha" → filtered to 1 result (Aisha Bello, VOT/2025009, Pending)
+- Export API: returns proper CSV with header metadata + RESULT rows + VOTER rows
+- Lint: 0 errors, 0 warnings
+
+Stage Summary:
+- Current status: STABLE. 10 feature areas now working (voting, dashboard, admin, candidate details, eligibility checker, monitor, observer/incidents, announcements, archive, settings + voter-facing announcements + export + voter search).
+- Completed modifications: 3 new features (portal announcements, CSV export, voter search) + 2 new API routes + 1 new component + 2 bug fixes.
+- Verification results: all new features verified end-to-end via agent-browser. Search filters correctly. Export returns valid CSV. Portal displays announcements.
+- Unresolved/risks: None critical. Radix UI Tabs require keyboard navigation (Space/Enter) in agent-browser — click events don't trigger tab switches (browser automation quirk, not a real user issue).
+- Priority recommendations for next phase:
+  1. Mobile responsiveness audit on all pages (especially tables and voter list)
+  2. Billing/subscription management (BSPCM) — Organization.plan + paidUntil fields exist
+  3. Observer role gating — currently any logged-in member can observe
+  4. Election results PDF export (beyond CSV)
+  5. Real-time voter count on portal (socket.io integration)
+  6. Voter notifications (email/SMS when election opens)
