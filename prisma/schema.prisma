@@ -416,3 +416,23 @@ model Announcement {
   @@index([organizationId, publishedAt])
   @@index([electionId])
 }
+
+// ============================================================
+// Webhooks (developer platform)
+// ============================================================
+
+model Webhook {
+  id              String   @id @default(cuid())
+  organizationId  String
+  url             String
+  secret          String   // HMAC signing secret
+  events          String   // JSON array: ["vote.cast","election.opened",...]
+  isActive        Boolean  @default(true)
+  lastTriggeredAt DateTime?
+  lastResponseStatus Int?
+  failureCount    Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId, isActive])
+}

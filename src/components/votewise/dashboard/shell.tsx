@@ -7,7 +7,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/votewise/primitives/theme-toggle";
-import { ShieldCheck, LayoutDashboard, Vote, Users, Settings, LogOut, ExternalLink, Megaphone, Flag, Menu, X, CreditCard, UserPlus } from "lucide-react";
+import { ShieldCheck, LayoutDashboard, Vote, Users, Settings, LogOut, ExternalLink, Megaphone, Flag, Menu, X, CreditCard, UserPlus, BarChart3, Webhook, Lock } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   Sheet, SheetContent, SheetTrigger, SheetTitle,
@@ -16,10 +16,13 @@ import {
 const NAV = [
   { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { label: "Elections", href: "/dashboard/elections", icon: Vote },
+  { label: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
   { label: "Announcements", href: "/dashboard/announcements", icon: Megaphone },
   { label: "Incidents", href: "/dashboard/incidents", icon: Flag },
   { label: "Members", href: "/dashboard/members", icon: UserPlus },
+  { label: "Webhooks", href: "/dashboard/webhooks", icon: Webhook },
   { label: "Billing", href: "/dashboard/billing", icon: CreditCard },
+  { label: "Security", href: "/dashboard/security", icon: Lock },
   { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
