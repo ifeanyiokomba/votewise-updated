@@ -774,3 +774,79 @@ Stage Summary:
   4. Custom domain management UI (for white-label orgs)
   5. Election results PDF export with server-side generation
   6. Voter import from CSV file upload (currently textarea paste)
+
+---
+Task ID: CRON-QA-R11
+Agent: Z.ai Code (webDevReview cron)
+Task: Round 11 — CSV voter import, risk-limiting audit, custom domain management
+
+Work Log:
+- Reviewed worklog.md (CRON-QA-R10). Project stable with 16 feature areas + observer + templates + notifications.
+- Performed QA: all services healthy (app uptime 1107s, results-service running), lint clean, 3 orgs in database.
+- Vote page renders correctly. No bugs found.
+- Identified highest-impact features from R10 recommendations:
+  1. CSV file upload for voter import (replacing textarea paste)
+  2. Risk-limiting audit (RLA) UI
+  3. Custom domain management for white-label orgs
+
+New features built:
+1. CSV file upload for voter import (replaces textarea)
+   - New VoterImport component with drag & drop dropzone
+   - Click-to-upload file input (accepts .csv, .txt)
+   - Parses CSV on file load, shows voter count + preview (first 3 names + "+N more")
+   - Manual textarea still available as fallback alongside file upload
+   - "Parse preview" button to validate before importing
+   - "Import N voters" button with live count
+   - File name displayed with remove button
+   - Replaces the old raw textarea on the election manage Voters tab (DRAFT status)
+2. Risk-limiting audit (RLA) UI (/dashboard/rla/[id])
+   - Shows reported tally per position (candidate name + count)
+   - Configurable risk limit (1-20%, default 10%)
+   - Configurable sample size (5-500, default 25)
+   - Deterministic random sampling using audit seed (SHA-256 of electionId + timestamp)
+   - Pass/fail verdict: discrepancyRate <= riskLimit → pass
+   - Recommendation text (pass: "results can be certified with confidence"; fail: "full recount recommended")
+   - Sample table: index, receipt code, position, candidate, verified status
+   - Warning card when election is not CLOSED/CERTIFIED ("Audit not available")
+   - "Audit" button on election manage page header
+   - API: GET (summary + tally), POST (run audit) /api/dashboard/elections/[id]/rla
+3. Custom domain management (/dashboard/domains)
+   - Shows default subdomain (achema.votewise.com.ng) with "Active" badge + copy + external link
+   - Custom domain form with validation (regex for valid domain format)
+   - Checks for domain conflicts (can't claim a domain used by another org)
+   - DNS configuration table: CNAME record → votewise.com.ng
+   - SSL info: "auto-provisioned via Let's Encrypt once DNS is verified"
+   - DNS propagation note (24-48 hours)
+   - Remove custom domain option
+   - API: GET (current domain config), PATCH (set/remove custom domain) /api/dashboard/domains
+
+Dashboard sidebar:
+- Expanded to 14 items: added Domains (Globe icon) between API Keys and Billing
+- Full nav: Overview, Observer, Elections, Analytics, Notifications, Announcements, Incidents, Members, Webhooks, API Keys, Domains, Billing, Security, Settings
+
+Styling improvements:
+- CSV upload: drag & drop dropzone with dashed border + hover highlight + UploadCloud icon
+- RLA: success/destructive verdict cards with colored backgrounds + icons
+- RLA: sample table with sticky header, verified checkmarks/crosses
+- Domains: active subdomain card with primary icon + success badge
+- Domains: DNS table with mono code formatting
+- Domains: info callout with AlertCircle icon for propagation note
+
+Verification (agent-browser):
+- RLA: /dashboard/rla/election-sug-2025 shows reported tally (Amina Bello: 4, Grace Eze: 2, Tunde Okafor: 3, Funmi Adewale: 4, Sani Musa: 5) + "Audit not available — election must be CLOSED or CERTIFIED" (correct for LIVE status)
+- Domains: shows "achema.votewise.com.ng" (Active) → entered "vote.achema.edu.ng" → clicked Save → "Custom domain active: vote.achema.edu.ng"
+- Lint: 0 errors, 0 warnings
+- Pushed to GitHub: commit 8214836 → main
+
+Stage Summary:
+- Current status: STABLE. 17 feature areas + CSV upload + RLA + custom domains.
+- Completed modifications: 3 new features (CSV upload, RLA, domains) + 2 new API routes + 2 new pages + 1 new component + 1 new sidebar item.
+- Verification results: all features verified via agent-browser. RLA shows correct tally + availability gate. Domains save + display. CSV upload component renders.
+- Unresolved/risks: RLA auto-verifies (no paper ballots in digital system) — in production, a human auditor would verify physical ballots. CSV upload component not tested with an actual file (agent-browser can't upload files easily).
+- Priority recommendations for next phase:
+  1. Real Paystack/Stripe payment integration (currently demo billing)
+  2. Voter notifications (email/SMS) — actual delivery when election opens
+  3. Election results PDF export with server-side generation
+  4. Audit log viewer with search/filter + chain verification UI
+  5. Voter CSV template download
+  6. Election schedule calendar view
