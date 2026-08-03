@@ -88,3 +88,31 @@ export const POST = api(async (req, { params }: { params: Promise<{ id: string }
 
   return ok({ imported: created, linked, total: input.voters.length });
 });
+
+export const DELETE = api(async (req, { params }: { params: Promise<{ id: string }> }) => {
+  const { id } = await params;
+  const { election, memberId, memberRole, memberName, organizationId } = await getScopedElection(id);
+  assertManage(memberRole);
+  if (election.status !== "DRAFT") {
+    throw new HttpError("CONFLICT", "Voter removal is locked (election is not in DRAFT)", 409);
+  }
+
+  const body = await req.json().catch(() => ({}));
+  const voterIds = (body as { voterIds?: string[] }).voterIds;
+  if (!voterIds || !Array.isArray(voterIds) || voterIds.length === 0) {
+    throw new HttpError("VALIDATION", "voterIds array required", 400);
+  }
+
+  // Delete eligibilities (not the voters themselves — they belong to the org)
+  const deleted = await db.voterEligibility.deleteMany({
+    where: { electionId: election.id, voterId: { in: voterIds } },
+  });
+
+  await audit({
+    organizationId, actorId: memberId, actorRole: memberRole, actorName: memberName,
+    action: "VOTERS_REMOVED", resource: "election", resourceId: election.id,
+    details: { count: deleted.count },
+  });
+
+  return ok({ removed: deleted.count });
+});

@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/votewise/primitives/section";
 import { formatNumber, formatPercent, formatDateTime, cn } from "@/lib/utils";
-import { Search, CheckCircle2, Clock, Users, Download, Flag, ShieldCheck } from "lucide-react";
+import { Search, CheckCircle2, Clock, Users, Download, Flag, ShieldCheck, Trash2 } from "lucide-react";
 
 interface VotersData {
   ok: boolean;
@@ -26,6 +26,7 @@ export function VotersTab({ electionId, canImport }: { electionId: string; canIm
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   // debounce search
   useEffect(() => {
@@ -65,6 +66,35 @@ export function VotersTab({ electionId, canImport }: { electionId: string; canIm
   const stats = data?.data?.stats;
 
   const exportUrl = `/api/dashboard/elections/${electionId}/export?format=csv`;
+
+  const bulkDeleteMut = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const res = await fetch(`/api/dashboard/elections/${electionId}/voters`, {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ voterIds: ids }),
+      });
+      return res.json();
+    },
+    onSuccess: (d) => {
+      if (d.ok) { toast.success(`Removed ${d.data.removed} voters`); setSelected(new Set()); qc.invalidateQueries({ queryKey: ["voters", electionId] }); }
+      else toast.error(d.error?.message ?? "Failed");
+    },
+  });
+
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selected.size === voters.length) setSelected(new Set());
+    else setSelected(new Set(voters.map((v) => v.id)));
+  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -124,6 +154,35 @@ export function VotersTab({ electionId, canImport }: { electionId: string; canIm
         </Button>
       </div>
 
+      {/* bulk action bar */}
+      {selected.size > 0 && (
+        <div className="flex items-center justify-between rounded-lg border border-primary/30 bg-primary/5 p-3 vw-fade-up">
+          <div className="flex items-center gap-2 text-sm">
+            <CheckCircle2 className="size-4 text-primary" />
+            <span className="font-medium">{selected.size} selected</span>
+          </div>
+          <div className="flex gap-2">
+            {canImport && (
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => {
+                  if (confirm(`Remove ${selected.size} voters from this election?`)) {
+                    bulkDeleteMut.mutate([...selected]);
+                  }
+                }}
+                disabled={bulkDeleteMut.isPending}
+              >
+                <Trash2 className="size-3.5" /> {bulkDeleteMut.isPending ? "Removing…" : "Remove selected"}
+              </Button>
+            )}
+            <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>
+              Clear
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* voter list */}
       {isLoading ? (
         <div className="py-8 text-center text-sm text-muted-foreground">Loading voters…</div>
@@ -134,6 +193,15 @@ export function VotersTab({ electionId, canImport }: { electionId: string; canIm
           <table className="w-full text-sm">
             <thead className="bg-background-subtle">
               <tr>
+                <th className="px-3 py-2.5 w-10">
+                  <input
+                    type="checkbox"
+                    checked={selected.size === voters.length && voters.length > 0}
+                    onChange={toggleSelectAll}
+                    className="accent-primary"
+                    aria-label="Select all"
+                  />
+                </th>
                 <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Voter</th>
                 <th className="px-4 py-2.5 text-left font-medium text-muted-foreground hidden sm:table-cell">Identifier</th>
                 <th className="px-4 py-2.5 text-left font-medium text-muted-foreground hidden md:table-cell">Contact</th>
@@ -143,7 +211,16 @@ export function VotersTab({ electionId, canImport }: { electionId: string; canIm
             </thead>
             <tbody>
               {voters.map((v) => (
-                <tr key={v.id} className={cn("border-t border-border hover:bg-muted/30", v.flagged && "bg-destructive/5")}>
+                <tr key={v.id} className={cn("border-t border-border hover:bg-muted/30", v.flagged && "bg-destructive/5", selected.has(v.id) && "bg-primary/5")}>
+                  <td className="px-3 py-2.5">
+                    <input
+                      type="checkbox"
+                      checked={selected.has(v.id)}
+                      onChange={() => toggleSelect(v.id)}
+                      className="accent-primary"
+                      aria-label={`Select ${v.fullName}`}
+                    />
+                  </td>
                   <td className="px-4 py-2.5">
                     <div className="flex items-center gap-2">
                       {v.flagged && <Flag className="size-3.5 text-destructive" />}
