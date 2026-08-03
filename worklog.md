@@ -614,3 +614,79 @@ Stage Summary:
   4. Election duplication/cloning from templates
   5. Risk-limiting audit (RLA) UI
   6. Observer dashboard (dedicated read-only election monitoring view)
+
+---
+Task ID: CRON-QA-R9
+Agent: Z.ai Code (webDevReview cron)
+Task: Round 9 — Election cloning, API key management, voter detail pages
+
+Work Log:
+- Reviewed worklog.md (CRON-QA-R8). Project stable with 14 feature areas + analytics + webhooks + 2FA.
+- Performed QA: all services healthy (app uptime 188s, results-service running), lint clean, database has 3 orgs.
+- All key routes returning 200 (public) or 307 (auth redirect). No bugs found.
+- Identified highest-impact features from R8 recommendations:
+  1. Election duplication/cloning — saves admin time for recurring elections
+  2. API key management (AIDP) — developer platform integration
+  3. Voter detail page — deep-dive voter view with timeline
+
+New features built:
+1. Election cloning (/dashboard/elections/[id] → Clone button)
+   - Deep-clones election + all positions + candidates in a Prisma $transaction
+   - New election is DRAFT status with dates 7 days from now (configurable via API)
+   - Preserves all settings: visibility, NOTA, ballot randomization, accreditation, live results
+   - Clone button on manage page header (next to Export + Certificate)
+   - On success: toast notification + redirect to cloned election's manage page
+   - Creates ELECTION_CLONED audit event + ELECTION_CREATED event with clonedFrom details
+   - API: POST /api/dashboard/elections/[id]/clone (accepts optional newName, newStartTime, newEndTime)
+2. API key management (/dashboard/api-keys)
+   - Schema: ApiKey model (name, keyPrefix, keyHash, scopes JSON, environment, isActive, lastUsedAt, expiresAt)
+   - Key format: vw_live_<40hex> or vw_test_<40hex> (environment-prefixed)
+   - Storage: sha256 hash of full key (never stores plaintext), first 12 chars as keyPrefix for identification
+   - Create form: name, environment (production/sandbox), scope checkboxes (7 scopes)
+   - Full key shown ONCE on creation in a success card with copy-to-clipboard
+   - Key list shows: name, masked prefix (vw_live_XXXX…), scopes as code chips, environment badge, last used, created
+   - Enable/disable toggle, delete with audit
+   - Usage example card with curl command
+   - API: GET/POST/PATCH/DELETE /api/dashboard/api-keys
+3. Voter detail page (/dashboard/voters/[id])
+   - Full voter profile: colored avatar, name, identifier (mono), email, phone, registration date
+   - Status badges: Voted (green) / Not voted (muted) + Flagged (red) if applicable
+   - Flagged reason displayed in a destructive callout
+   - Eligible elections list with status badges + accreditation indicator
+   - Vote receipts: receiptCode (mono, primary color), position title, election name, NOTA flag, timestamp
+   - Activity timeline: audit events with action-specific icons, IP addresses, relative timestamps
+   - Visual timeline with colored dots on a vertical line
+   - Voter names in VotersTab are now clickable links to the detail page
+   - API: GET /api/dashboard/voters/[id] (returns voter + eligibilities + voteRecords + auditEvents)
+
+Dashboard sidebar:
+- Expanded to 11 items: added API Keys (Key icon) between Webhooks and Billing
+- Full nav: Overview, Elections, Analytics, Announcements, Incidents, Members, Webhooks, API Keys, Billing, Security, Settings
+
+Styling improvements:
+- API key success card with green border + copy button
+- Scope checkboxes in a responsive 3-column grid with primary highlight
+- Key list cards with environment-coded icons (primary for production, warning for sandbox)
+- Voter detail: gradient-free card with colored avatar, inline status badges
+- Activity timeline with vertical line + colored dots + action icons
+- Voter table: names are now hover-underlined links
+
+Verification (agent-browser):
+- API keys: clicked "New key" → filled "Production Integration" → created → full key shown (vw_live_e53c4236...) → masked in list with scopes (read:elections, read:results)
+- Election clone: clicked "Clone" on SUG election → "SUG General Elections 2025 (Copy)" created as DRAFT → redirected to new election manage page
+- Voter detail: opened Voters tab → clicked "Aisha Bello" → full profile with avatar, eligible elections (SUG - LIVE), vote receipts (none), activity timeline (none)
+- Lint: 0 errors, 0 warnings
+- Pushed to GitHub: commit 7418793 → main
+
+Stage Summary:
+- Current status: STABLE. 15 feature areas + cloning + API keys + voter detail.
+- Completed modifications: 3 new features (clone, API keys, voter detail) + 1 new schema model (ApiKey) + 3 new API routes + 2 new pages + 1 new sidebar item.
+- Verification results: all features verified via agent-browser. Clone creates DRAFT copy. API key shows once + masks. Voter detail shows full timeline.
+- Unresolved/risks: None critical. API keys are stored as sha256 hashes (secure). 2FA verification still not tested with a real authenticator app (RFC 6238 compliant).
+- Priority recommendations for next phase:
+  1. Real Paystack/Stripe payment integration (currently demo billing)
+  2. Voter notifications (email/SMS) — when election opens, when vote is received
+  3. Risk-limiting audit (RLA) UI
+  4. Observer dashboard (dedicated read-only election monitoring view)
+  5. Election templates (pre-configured election types: SUG, board, AGM)
+  6. Custom domain management UI (for white-label orgs)
