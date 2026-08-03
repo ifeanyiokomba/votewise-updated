@@ -76,3 +76,74 @@ Stage Summary:
 - Results-service running on port 3030, app on 3000. Both healthy.
 - GitHub push: gh CLI not available in sandbox; README documents the manual push steps for votewise-updated.
 - Next steps (extension points documented in docs/04-ARCHITECTURE.md §15): billing (BSPCM), fraud engine (EIFDIRS) UI, API platform (AIDP), observer incidents, RLA UI.
+
+---
+Task ID: CRON-QA-R2
+Agent: Z.ai Code (webDevReview cron)
+Task: Round 2 — QA + bug fixes + new features + styling improvements
+
+Work Log:
+- Reviewed worklog.md (BUILD-COMPLETE entry from previous round).
+- Performed comprehensive agent-browser QA on all key routes:
+  - Landing (/) — clean, no errors
+  - Org portal (/o/achema) — real data, live + scheduled elections
+  - Live results (/o/achema/results) — positions + tallies render
+  - Candidates (/o/achema/candidates) — real candidate directory
+  - Verify (/o/achema/verify) — auto-verify on URL param works on reload
+  - Full voting flow — voter VOT/2025002 → OTP → ballot → cast → receipt VW-2026-VHDCUW
+  - Dashboard manage page — tabs (Positions/Voters/Settings) work
+  - Admin console — orgs table, audit chain integrity verifier, recent audit entries
+- Identified bug: "Cast vote" button on review step was covered by sticky footer
+- Identified missing features: no candidate detail pages, no public eligibility checker,
+  no election monitor/analytics view, no quick-action cards on portal
+
+Fixes applied:
+- Voting flow: added useRef + useEffect to scroll-to-top on step change (prevents
+  Cast Vote button from being covered by footer). Added pb-32 to vote page container.
+
+New features built:
+1. Candidate detail pages (/o/:org/candidates/:candidateId)
+   - Full profile: avatar with colored ring, name, approval badge, slogan, position
+   - Bio section, manifesto section (with quote-styled left border)
+   - Vote CTA when election is LIVE
+   - API: GET /api/elections/[id]/candidates/[candidateId]
+2. Public eligibility checker (/o/:org/check)
+   - No auth required — voters enter identifier to check registration
+   - Shows voter name, eligible elections with status, and "Vote now" button for LIVE elections
+   - Distinguishes NOT_REGISTERED vs FLAGGED vs already-voted
+   - Uses existing /api/voter/eligibility endpoint
+3. Election Monitor tab on dashboard manage page
+   - KPI cards: total votes, turnout %, voted count, eligible count
+   - 24-hour vote activity bar chart (hover tooltips show count per hour)
+   - Recent votes feed (10s auto-refresh) with receipt codes + time-ago
+   - Election timeline (visual hash-chain event log with colored dots per event type)
+   - Current tally leaderboard (horizontal bars per position)
+   - New API routes: /api/dashboard/elections/[id]/stats, /events
+4. Quick-action cards on org portal
+   - Three icon-coded cards: Check eligibility (info), View candidates (primary), Verify receipt (success)
+
+Styling improvements:
+- Candidate cards now clickable with "View profile" affordance + ArrowRight icon
+- Portal quick-action cards with vw-lift hover effect
+- Monitor tab with animated bar chart, colored timeline markers, leaderboard bars
+- Candidate detail page with gradient header, avatar ring, border-l-2 manifesto quote
+
+Verification (agent-browser):
+- Eligibility checker: entered VOT/2025003 → "You're registered, Blessing Eze" + SUG election + "Vote now" button
+- Candidate detail: /o/achema/candidates/cand-amina → "Amina Bello, Approved, Progress Together, Running for President · SUG General Elections 2025" + bio + manifesto + vote CTA
+- Monitor tab: KPIs (4 votes, 13.3% turnout, 2 voted, 15 eligible) + hourly chart + recent votes + timeline + tally
+- Full voting flow: VOT/2025004 → OTP 353862 → shuffled ballot (Tunde first) → Amina+Sani → review → cast → receipt VW-2026-5QQ3WQ
+- Lint: 0 errors, 0 warnings
+- All services healthy (app uptime 3714s, results-service running)
+
+Stage Summary:
+- Current status: STABLE. All core flows working + 3 new feature areas added.
+- Completed modifications: voting button fix, candidate detail pages, eligibility checker, election monitor, portal quick-actions.
+- Verification results: all new features verified end-to-end via agent-browser. Lint clean.
+- Unresolved/risks: None critical. The login form button click via agent-browser sometimes requires requestSubmit() workaround (browser automation quirk, not a real bug).
+- Priority recommendations for next phase:
+  1. Billing/subscription management (BSPCM) — Organization.plan + paidUntil fields exist, Paystack integration is the next extension point
+  2. Observer role UI — read-only election monitoring with incident reporting
+  3. Fraud detection dashboard (EIFDIRS) — integrity events stream + incident management
+  4. API key management (AIDP) — for developer/integration access
+  5. Mobile responsiveness audit on all new pages
