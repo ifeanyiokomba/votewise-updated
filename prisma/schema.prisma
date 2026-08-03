@@ -1,0 +1,370 @@
+// VoteWise — next-generation schema (curated core)
+// Provider: SQLite (dev/sandbox) → PostgreSQL (production) via single-line swap.
+// No native enums (SQLite-incompatible); value domains enforced in Zod (src/lib/validation.ts).
+// Every model (except Organization) carries organizationId for tenant isolation.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// Multi-tenancy & identity
+// ============================================================
+
+model Organization {
+  id           String   @id @default(cuid())
+  name         String
+  subdomain    String   @unique
+  customDomain String?  @unique
+  category     String   @default("UNIVERSITY") // UNIVERSITY|COMPANY|COOPERATIVE|CHURCH|NGO|POLITICAL_PARTY|ASSOCIATION|GOVERNMENT
+  status       String   @default("ACTIVE") // ACTIVE|SUSPENDED|ARCHIVED
+  plan         String   @default("FREE") // FREE|PAYG|ENTERPRISE
+  locale       String   @default("en")
+  timezone     String   @default("Africa/Lagos")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  members      OrganizationMember[]
+  brand        OrganizationBrand?
+  elections    Election[]
+  voters       Voter[]
+  auditLogs    AuditLog[]
+}
+
+model OrganizationMember {
+  id             String   @id @default(cuid())
+  organizationId String
+  email          String
+  name           String
+  passwordHash   String
+  role           String   @default("ORG_ADMIN") // PLATFORM_ADMIN|ORG_OWNER|ORG_ADMIN|OBSERVER
+  status         String   @default("ACTIVE") // ACTIVE|SUSPENDED|PENDING
+  totpSecret     String?
+  totpEnabled    Boolean  @default(false)
+  failedAttempts Int      @default(0)
+  lockedUntil    DateTime?
+  lastLoginAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  loginSessions  LoginSession[]
+
+  @@unique([organizationId, email])
+  @@index([email])
+}
+
+model OrganizationBrand {
+  id             String   @id @default(cuid())
+  organizationId String   @unique
+  logoUrl        String?
+  primaryColor   String?
+  accentColor    String?
+  tagline        String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+// ============================================================
+// Elections, positions, candidates
+// ============================================================
+
+model Election {
+  id                String   @id @default(cuid())
+  organizationId    String
+  name              String
+  description       String?
+  status            String   @default("DRAFT") // DRAFT|SCHEDULED|LIVE|PAUSED|CLOSED|CERTIFIED|ARCHIVED|CANCELLED
+  visibility        String   @default("PRIVATE") // PUBLIC|PRIVATE
+  startTime         DateTime
+  endTime           DateTime
+  showLiveResults   Boolean  @default(true)
+  hideResultsUntilEnd Boolean @default(false)
+  requireAccreditation Boolean @default(false)
+  notaEnabled       Boolean  @default(true)
+  ballotRandomization Boolean @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  certifiedAt       DateTime?
+
+  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  positions         Position[]
+  voters            VoterEligibility[]
+  ballots           Ballot[]
+  votes             VoteRecord[]
+  tallies           CandidateTally[]
+  verification      ElectionVerification?
+  events            ElectionEvent[]
+
+  @@index([organizationId, status])
+  @@index([organizationId, startTime])
+}
+
+model Position {
+  id            String   @id @default(cuid())
+  electionId    String
+  title         String
+  description   String?
+  maxVotes      Int      @default(1)
+  displayOrder  Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  election      Election  @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  candidates    Candidate[]
+  votes         VoteRecord[]
+  tallies       CandidateTally[]
+
+  @@index([electionId, displayOrder])
+}
+
+model Candidate {
+  id              String   @id @default(cuid())
+  positionId      String
+  name            String
+  bio             String?
+  manifesto       String?
+  photoUrl        String?
+  slogan          String?
+  status          String   @default("APPROVED") // APPROVED|DISQUALIFIED|WITHDRAWN
+  screeningStatus String   @default("APPROVED") // PENDING|ELIGIBILITY_CHECK|DOCUMENT_REVIEW|APPROVED|DISQUALIFIED
+  displayOrder    Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  position        Position          @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  votes           VoteRecord[]
+  tallies         CandidateTally[]
+
+  @@index([positionId, status])
+}
+
+// ============================================================
+// Voters & eligibility
+// ============================================================
+
+model Voter {
+  id              String   @id @default(cuid())
+  organizationId  String
+  identifier      String   // matric / employee id / membership no
+  fullName        String
+  email           String?
+  phone           String?
+  metadata        String?  // JSON string for dynamic fields
+  hasVoted        Boolean  @default(false)
+  votedAt         DateTime?
+  flagged         Boolean  @default(false)
+  flaggedReason   String?
+  otpCode         String?  // hashed
+  otpExpiresAt    DateTime?
+  otpAttempts     Int      @default(0)
+  otpCooldownUntil DateTime?
+  failedOtpAttempts Int    @default(0)
+  lockedUntil     DateTime?
+  sessionToken    String?  @unique
+  sessionExpiresAt DateTime?
+  sessionDeviceId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organization    Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  eligibilities   VoterEligibility[]
+  sessions        VoterSession[]
+  ballots         Ballot[]
+  votes           VoteRecord[]
+
+  @@unique([organizationId, identifier])
+  @@index([organizationId, email])
+  @@index([organizationId, phone])
+}
+
+model VoterEligibility {
+  id          String   @id @default(cuid())
+  electionId  String
+  voterId     String
+  accredited  Boolean  @default(false)
+  accreditedAt DateTime?
+  createdAt   DateTime @default(now())
+
+  election    Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  voter       Voter    @relation(fields: [voterId], references: [id], onDelete: Cascade)
+
+  @@unique([electionId, voterId])
+}
+
+model VoterSession {
+  id              String   @id @default(cuid())
+  voterId         String
+  electionId      String?
+  token           String   @unique
+  deviceFingerprint String?
+  ipAddress       String?
+  userAgent       String?
+  expiresAt       DateTime
+  revoked         Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  voter           Voter @relation(fields: [voterId], references: [id], onDelete: Cascade)
+
+  @@index([voterId, expiresAt])
+}
+
+model LoginSession {
+  id              String   @id @default(cuid())
+  memberId        String
+  token           String   @unique
+  ipAddress       String?
+  userAgent       String?
+  expiresAt       DateTime
+  revoked         Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  member          OrganizationMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+}
+
+// ============================================================
+// Secure Voting Engine (SVE)
+// ============================================================
+
+model Ballot {
+  id              String   @id @default(cuid())
+  electionId      String
+  voterId         String
+  content         String   // JSON: positions + candidates + rules snapshot
+  rulesHash       String
+  integrityToken  String
+  digitalSignature String
+  status          String   @default("GENERATED") // GENERATED|SUBMITTED|EXPIRED|CANCELLED
+  isSimulation    Boolean  @default(false)
+  expiresAt       DateTime
+  createdAt       DateTime @default(now())
+  submittedAt     DateTime?
+
+  election        Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  voter           Voter    @relation(fields: [voterId], references: [id], onDelete: Cascade)
+  votes           VoteRecord[]
+
+  @@index([electionId, voterId])
+  @@index([status, expiresAt])
+}
+
+model VoteRecord {
+  id              String   @id @default(cuid())
+  electionId      String
+  positionId      String
+  candidateId     String?  // null for NOTA when isNota=true
+  voterId         String?
+  voterHash       String   // sha256(voterId + electionId + pepper) — one-way, per-election
+  ballotId        String?
+  encryptedChoice String   // AES-256-GCM ciphertext
+  iv              String
+  keyId           String   @default("v1")
+  isNota          Boolean  @default(false)
+  receiptCode     String   @unique
+  idempotencyKey  String   @unique
+  isSimulation    Boolean  @default(false)
+  isArchived      Boolean  @default(false)
+  ipAddress       String?
+  deviceFingerprint String?
+  createdAt       DateTime @default(now())
+
+  election        Election  @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  position        Position  @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  candidate       Candidate? @relation(fields: [candidateId], references: [id], onDelete: SetNull)
+  voter           Voter?    @relation(fields: [voterId], references: [id], onDelete: SetNull)
+  ballot          Ballot?   @relation(fields: [ballotId], references: [id], onDelete: SetNull)
+  tallies         CandidateTally[]
+
+  @@index([electionId, positionId])
+  @@index([electionId, createdAt])
+  @@index([voterHash])
+}
+
+model CandidateTally {
+  id          String   @id @default(cuid())
+  electionId  String
+  positionId  String
+  candidateId String
+  count       Int      @default(0)
+  updatedAt   DateTime @updatedAt
+
+  election    Election  @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  position    Position  @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  votes       VoteRecord[]
+
+  @@unique([electionId, positionId, candidateId])
+}
+
+model ElectionVerification {
+  id                   String   @id @default(cuid())
+  electionId           String   @unique
+  totalEligible        Int
+  totalVotes           Int
+  invalidVotes         Int      @default(0)
+  blankVotes           Int      @default(0)
+  turnoutPct           Float
+  auditHash            String
+  integritySignature   String
+  certifiedAt          DateTime @default(now())
+
+  election             Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
+}
+
+model ElectionEvent {
+  id          String   @id @default(cuid())
+  electionId  String
+  eventType   String   // CREATED|PUBLISHED|VOTING_OPENED|VOTE_CAST|PAUSED|VOTING_CLOSED|RESULTS_GENERATED|CERTIFIED|CANCELLED
+  actorId     String?
+  actorName   String?
+  details     String?  // JSON
+  createdAt   DateTime @default(now())
+
+  election    Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
+
+  @@index([electionId, createdAt])
+}
+
+// ============================================================
+// Audit & integrity
+// ============================================================
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  organizationId String?
+  actorId        String?
+  actorRole      String?
+  actorName      String?
+  action         String
+  resource       String?
+  resourceId     String?
+  details        String?  // JSON
+  prevHash       String?
+  hash           String
+  nonce          String
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
+
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt])
+  @@index([action])
+}
+
+model SupportTicket {
+  id          String   @id @default(cuid())
+  organizationId String?
+  name        String
+  email       String
+  subject     String
+  message     String
+  priority    String   @default("NORMAL") // LOW|NORMAL|HIGH|URGENT
+  status      String   @default("OPEN") // OPEN|ASSIGNED|RESOLVED|CLOSED
+  createdAt   DateTime @default(now())
+}
