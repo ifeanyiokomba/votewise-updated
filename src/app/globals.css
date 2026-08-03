@@ -198,6 +198,39 @@
     outline-offset: 2px;
     border-radius: 4px;
   }
+
+  /* Global card entrance animation — applies to all Card components */
+  [data-slot="card"] {
+    animation: vw-card-enter 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  /* Stagger cards inside grids (nth-child delays) */
+  [data-slot="card"]:nth-child(1) { animation-delay: 0ms; }
+  [data-slot="card"]:nth-child(2) { animation-delay: 60ms; }
+  [data-slot="card"]:nth-child(3) { animation-delay: 120ms; }
+  [data-slot="card"]:nth-child(4) { animation-delay: 180ms; }
+  [data-slot="card"]:nth-child(5) { animation-delay: 240ms; }
+  [data-slot="card"]:nth-child(6) { animation-delay: 300ms; }
+  [data-slot="card"]:nth-child(n+7) { animation-delay: 360ms; }
+
+  /* Global interactive card hover */
+  [data-slot="card"]:hover {
+    border-color: var(--border-strong);
+  }
+
+  /* Global button + link transitions */
+  button, a, [role="button"] {
+    transition: all 0.15s ease;
+  }
+
+  /* Input focus transitions */
+  input, select, textarea {
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  /* Table row hover */
+  tbody tr {
+    transition: background-color 0.15s ease;
+  }
 }
 
 /* ============================================================
