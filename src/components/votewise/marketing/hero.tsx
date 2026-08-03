@@ -6,7 +6,7 @@ import { ArrowRight, ShieldCheck, CheckCircle2, Vote, BarChart3 } from "lucide-r
 import { useEffect, useState } from "react";
 import { TypingText } from "@/components/votewise/primitives/typing-text";
 import { DataFlowBackground } from "@/components/votewise/primitives/data-flow-background";
-import { CandidateOrbs } from "@/components/votewise/primitives/candidate-orbs";
+import { FlyingHeadshots } from "@/components/votewise/primitives/flying-headshots";
 
 const PIPELINE = [
   { label: "Voter verified", icon: ShieldCheck, color: "text-success" },
@@ -45,9 +45,9 @@ export function Hero() {
 
   return (
     <section className="relative votewise-hero-bg overflow-hidden">
-      {/* Data flow + candidate orbs animated background */}
+      {/* Data flow + flying candidate headshots */}
       <DataFlowBackground />
-      <CandidateOrbs />
+      <FlyingHeadshots />
       <div className="votewise-grid-bg absolute inset-0 opacity-15" aria-hidden />
 
       <div className="vw-section relative py-12 md:py-20 lg:py-28">
