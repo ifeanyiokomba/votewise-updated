@@ -22,12 +22,12 @@ interface Candidate {
 }
 
 const CANDIDATES: Candidate[] = [
-  { src: "/headshots/candidate-1.png", name: "Amina Bello", votes: 1247, baseSize: 22, position: { top: "10%", left: "1%", z: 2 }, delay: 0 },
-  { src: "/headshots/candidate-2.png", name: "Tunde Okafor", votes: 983, baseSize: 22, position: { top: "18%", left: "90%", z: 2 }, delay: 0.3 },
-  { src: "/headshots/candidate-3.png", name: "Grace Eze", votes: 756, baseSize: 20, position: { top: "45%", left: "0%", z: 1 }, delay: 0.6 },
-  { src: "/headshots/candidate-4.png", name: "Sani Musa", votes: 612, baseSize: 20, position: { top: "55%", left: "91%", z: 1 }, delay: 0.9 },
-  { src: "/headshots/candidate-5.png", name: "Funmi Adewale", votes: 445, baseSize: 18, position: { top: "80%", left: "2%", z: 1 }, delay: 1.2 },
-  { src: "/headshots/candidate-6.png", name: "David Okon", votes: 321, baseSize: 18, position: { top: "75%", left: "89%", z: 1 }, delay: 1.5 },
+  { src: "/headshots/candidate-1.png", name: "Amina Bello", votes: 1247, baseSize: 22, position: { top: "4%", left: "1%", z: 2 }, delay: 0 },
+  { src: "/headshots/candidate-2.png", name: "Tunde Okafor", votes: 983, baseSize: 22, position: { top: "8%", left: "90%", z: 2 }, delay: 0.3 },
+  { src: "/headshots/candidate-3.png", name: "Grace Eze", votes: 756, baseSize: 20, position: { top: "40%", left: "0%", z: 1 }, delay: 0.6 },
+  { src: "/headshots/candidate-4.png", name: "Sani Musa", votes: 612, baseSize: 20, position: { top: "50%", left: "91%", z: 1 }, delay: 0.9 },
+  { src: "/headshots/candidate-5.png", name: "Funmi Adewale", votes: 445, baseSize: 18, position: { top: "78%", left: "2%", z: 1 }, delay: 1.2 },
+  { src: "/headshots/candidate-6.png", name: "David Okon", votes: 321, baseSize: 18, position: { top: "72%", left: "89%", z: 1 }, delay: 1.5 },
 ];
 
 export function FlyingHeadshots() {
