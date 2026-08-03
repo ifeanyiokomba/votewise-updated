@@ -122,25 +122,24 @@ export default function ManageElectionPage() {
   const next = NEXT_ACTION[election.status];
 
   return (
-    <div className="p-6 md:p-8">
-      <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="vw-display text-2xl">{election.name}</h1>
-            <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${election.status === "LIVE" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"}`}>
-              {election.status === "LIVE" && <span className="votewise-live-dot mr-1.5" style={{ width: 6, height: 6 }} />}
-              {election.status}
-            </span>
-          </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {formatDateTime(election.startTime)} → {formatDateTime(election.endTime)}
-          </p>
+    <div className="p-4 md:p-8 min-w-0">
+      <div className="mb-6 flex flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="vw-display text-xl md:text-2xl break-words min-w-0 flex-1">{election.name}</h1>
+          <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${election.status === "LIVE" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"}`}>
+            {election.status === "LIVE" && <span className="votewise-live-dot mr-1.5" style={{ width: 6, height: 6 }} />}
+            {election.status}
+          </span>
         </div>
-        <div className="flex items-center gap-2">
+        <p className="text-sm text-muted-foreground break-words">
+          {formatDateTime(election.startTime)} → {formatDateTime(election.endTime)}
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
           {next && (
             <Button
               onClick={() => lifecycle.mutate(next.action)}
               disabled={lifecycle.isPending}
+              size="sm"
               className={next.tone === "success" ? "bg-success text-success-foreground hover:bg-success/90" : next.tone === "warning" ? "bg-warning text-warning-foreground hover:bg-warning/90" : ""}
             >
               <next.icon className="size-4" /> {next.label}

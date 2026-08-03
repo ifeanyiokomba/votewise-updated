@@ -10,6 +10,7 @@ import { formatNumber, formatPercent, formatDateTime } from "@/lib/utils";
 import { ELECTION_STATUSES } from "@/lib/constants";
 import { Vote, Users, CheckCircle2, Calendar, BarChart3, ArrowRight, Search, Megaphone, Info, AlertTriangle, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { LiveTurnout } from "@/components/votewise/org/live-turnout";
 
 interface PortalData {
   ok: boolean;
@@ -85,34 +86,37 @@ export default function OrgPortalPage() {
         ))}
       </div>
 
-      {/* live election callout */}
+      {/* live election callout + live turnout */}
       {live && (
-        <Card className="mt-8 vw-pop border-success/30">
-          <CardContent className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-start gap-3">
-              <span className="mt-1 votewise-live-dot" />
-              <div>
-                <div className="vw-eyebrow text-success">Election open now</div>
-                <h2 className="vw-display text-xl">{live.name}</h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Closes {formatDateTime(live.endTime)}
-                </p>
+        <div className="mt-8 grid gap-4 lg:grid-cols-[1.5fr_1fr]">
+          <Card className="vw-pop border-success/30">
+            <CardContent className="flex flex-col gap-4 p-6">
+              <div className="flex items-start gap-3">
+                <span className="mt-1 votewise-live-dot" />
+                <div className="flex-1">
+                  <div className="vw-eyebrow text-success">Election open now</div>
+                  <h2 className="vw-display text-xl">{live.name}</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Closes {formatDateTime(live.endTime)}
+                  </p>
+                </div>
               </div>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button asChild size="sm">
-                <Link href={`/o/${params.subdomain}/vote?election=${live.id}`}>
-                  Cast your vote <ArrowRight className="size-3.5" />
-                </Link>
-              </Button>
-              {live.showLiveResults && (
-                <Button asChild size="sm" variant="outline">
-                  <Link href={`/o/${params.subdomain}/results?election=${live.id}`}>Live results</Link>
+              <div className="flex flex-wrap gap-2">
+                <Button asChild size="sm">
+                  <Link href={`/o/${params.subdomain}/vote?election=${live.id}`}>
+                    Cast your vote <ArrowRight className="size-3.5" />
+                  </Link>
                 </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                {live.showLiveResults && (
+                  <Button asChild size="sm" variant="outline">
+                    <Link href={`/o/${params.subdomain}/results?election=${live.id}`}>Live results</Link>
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+          <LiveTurnout electionId={live.id} electionName={live.name} />
+        </div>
       )}
 
       {/* quick actions */}

@@ -1,13 +1,14 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo, useEffect } from "react";
+import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/votewise/primitives/section";
 import { formatNumber, formatPercent, formatDateTime, cn } from "@/lib/utils";
-import { Search, CheckCircle2, Clock, Users, Download, Flag } from "lucide-react";
+import { Search, CheckCircle2, Clock, Users, Download, Flag, ShieldCheck } from "lucide-react";
 
 interface VotersData {
   ok: boolean;
@@ -41,6 +42,22 @@ export function VotersTab({ electionId, canImport }: { electionId: string; canIm
   const { data, isLoading } = useQuery<VotersData>({
     queryKey: ["voters", electionId, queryString],
     queryFn: async () => (await fetch(`/api/dashboard/elections/${electionId}/voters?${queryString}`)).json(),
+  });
+
+  const qc = useQueryClient();
+  const flagMut = useMutation({
+    mutationFn: async ({ id, flagged, reason }: { id: string; flagged: boolean; reason?: string }) => {
+      const res = await fetch(`/api/dashboard/voters/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ flagged, flaggedReason: reason }),
+      });
+      return res.json();
+    },
+    onSuccess: (d) => {
+      if (d.ok) { toast.success(d.data.flagged ? "Voter flagged" : "Voter unflagged"); qc.invalidateQueries({ queryKey: ["voters", electionId] }); }
+      else toast.error(d.error?.message ?? "Failed");
+    },
   });
 
   const voters = data?.data?.voters ?? [];
@@ -120,11 +137,12 @@ export function VotersTab({ electionId, canImport }: { electionId: string; canIm
                 <th className="px-4 py-2.5 text-left font-medium text-muted-foreground hidden sm:table-cell">Identifier</th>
                 <th className="px-4 py-2.5 text-left font-medium text-muted-foreground hidden md:table-cell">Contact</th>
                 <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">Status</th>
+                <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">Actions</th>
               </tr>
             </thead>
             <tbody>
               {voters.map((v) => (
-                <tr key={v.id} className="border-t border-border hover:bg-muted/30">
+                <tr key={v.id} className={cn("border-t border-border hover:bg-muted/30", v.flagged && "bg-destructive/5")}>
                   <td className="px-4 py-2.5">
                     <div className="flex items-center gap-2">
                       {v.flagged && <Flag className="size-3.5 text-destructive" />}
@@ -148,6 +166,32 @@ export function VotersTab({ electionId, canImport }: { electionId: string; canIm
                       <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
                         <Clock className="size-3" /> Pending
                       </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-2.5 text-right">
+                    {v.flagged ? (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-success hover:text-success"
+                        disabled={flagMut.isPending}
+                        onClick={() => flagMut.mutate({ id: v.id, flagged: false })}
+                      >
+                        <ShieldCheck className="size-3.5" /> Unflag
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-destructive hover:text-destructive"
+                        disabled={flagMut.isPending || v.hasVoted}
+                        onClick={() => {
+                          const reason = prompt("Reason for flagging this voter? (optional)");
+                          flagMut.mutate({ id: v.id, flagged: true, reason: reason || "Flagged by admin" });
+                        }}
+                      >
+                        <Flag className="size-3.5" /> Flag
+                      </Button>
                     )}
                   </td>
                 </tr>
