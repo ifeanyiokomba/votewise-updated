@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ShieldCheck, Lock, FileCheck, Eye } from "lucide-react";
+import { VoteWiseLogo } from "@/components/votewise/primitives/logo";
 
 const COLUMNS = [
   {
@@ -50,14 +51,7 @@ export function SiteFooter() {
       <div className="vw-section py-16">
         <div className="grid gap-12 lg:grid-cols-[1.2fr_2fr]">
           <div className="flex flex-col gap-4">
-            <div className="inline-flex items-center gap-2">
-              <span className="grid size-7 place-items-center rounded-md bg-primary text-primary-foreground">
-                <ShieldCheck className="size-4" />
-              </span>
-              <span className="vw-display text-lg">
-                VoteWise<span className="text-accent">.</span>
-              </span>
-            </div>
+            <VoteWiseLogo size={32} />
             <p className="max-w-xs text-sm text-muted-foreground leading-relaxed">
               The Voting Operating System. Verifiable, tamper-evident elections for any organization.
             </p>

@@ -4,6 +4,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, ShieldCheck, CheckCircle2, Vote, BarChart3 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { TypingText } from "@/components/votewise/primitives/typing-text";
+import { SpiralBackground } from "@/components/votewise/primitives/spiral-background";
 
 const PIPELINE = [
   { label: "Voter verified", icon: ShieldCheck, color: "text-success" },
@@ -11,6 +13,8 @@ const PIPELINE = [
   { label: "Vote recorded", icon: Vote, color: "text-primary" },
   { label: "Receipt issued", icon: CheckCircle2, color: "text-success" },
 ];
+
+const ROTATING_WORDS = ["actually trust", "verify", "audit", "prove"];
 
 /** Deterministic 8-char hex from a label — stable across SSR and client. */
 function hashLabel(label: string): string {
@@ -40,7 +44,10 @@ export function Hero() {
 
   return (
     <section className="relative votewise-hero-bg overflow-hidden">
-      <div className="votewise-grid-bg absolute inset-0 opacity-40" aria-hidden />
+      {/* Spiral animated background */}
+      <SpiralBackground />
+      <div className="votewise-grid-bg absolute inset-0 opacity-30" aria-hidden />
+
       <div className="vw-section relative py-20 md:py-28">
         <div className="grid gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-16 items-center">
           {/* Left: copy */}
@@ -53,7 +60,14 @@ export function Hero() {
             <h1 className="vw-display text-4xl md:text-5xl lg:text-6xl leading-[1.05] tracking-tight">
               Elections you can
               <br />
-              actually trust<span className="text-accent">.</span>
+              <TypingText
+                words={ROTATING_WORDS}
+                className="text-primary"
+                typingSpeed={70}
+                deletingSpeed={35}
+                pauseDuration={2000}
+              />
+              <span className="text-accent">.</span>
             </h1>
 
             <p className="max-w-xl text-base md:text-lg text-muted-foreground leading-relaxed">
@@ -140,8 +154,8 @@ export function Hero() {
 
             {/* floating accent orb */}
             <div
-              className="votewise-hero-bg pointer-events-none absolute -right-8 -top-8 -z-10 size-40 rounded-full opacity-30 blur-2xl"
-              style={{ background: "var(--primary)" }}
+              className="pointer-events-none absolute -right-8 -top-8 -z-10 size-40 rounded-full opacity-30 blur-2xl"
+              style={{ background: "var(--primary)", animation: "vw-float 6s ease-in-out infinite" }}
               aria-hidden
             />
           </div>

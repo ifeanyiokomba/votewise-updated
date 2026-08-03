@@ -1,6 +1,7 @@
 import { SiteNav } from "@/components/votewise/marketing/site-nav";
 import { SiteFooter } from "@/components/votewise/marketing/site-footer";
 import { Hero } from "@/components/votewise/marketing/hero";
+import { NotificationPopups } from "@/components/votewise/primitives/notification-popups";
 import {
   TrustStrip,
   FeatureBento,
@@ -24,6 +25,7 @@ export default function Home() {
         <CTASection />
       </main>
       <SiteFooter />
+      <NotificationPopups />
     </div>
   );
 }
