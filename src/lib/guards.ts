@@ -37,6 +37,15 @@ export async function requireOrgAdmin(organizationId: string): Promise<Organizat
   return m;
 }
 
+/** Observer or higher — can view election data and file incidents. */
+export async function requireObserver(): Promise<OrganizationMember> {
+  const m = await requireOfficial();
+  if (!["PLATFORM_ADMIN", "ORG_OWNER", "ORG_ADMIN", "OBSERVER"].includes(m.role)) {
+    throw new HttpError("FORBIDDEN", "Observer access required", 403);
+  }
+  return m;
+}
+
 export async function requirePlatformAdmin(): Promise<OrganizationMember> {
   const m = await requireOfficial();
   if (m.role !== "PLATFORM_ADMIN") {

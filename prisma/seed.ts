@@ -57,6 +57,20 @@ async function main() {
     },
   });
 
+  // ---- Observer member ----
+  await db.organizationMember.upsert({
+    where: { organizationId_email: { organizationId: org1.id, email: "observer@achema.edu" } },
+    update: {},
+    create: {
+      organizationId: org1.id,
+      email: "observer@achema.edu",
+      name: "Prof. Ibrahim Saleh",
+      passwordHash: org1Pass, // same password for demo
+      role: "OBSERVER",
+      status: "ACTIVE",
+    },
+  });
+
   // ---- Live election: SUG 2025 ----
   const startLive = new Date(Date.now() - 60 * 60_000); // 1h ago
   const endLive = new Date(Date.now() + 5 * 60 * 60_000); // 5h from now
@@ -198,6 +212,7 @@ async function main() {
   console.log("Seed complete.");
   console.log("  Platform admin: admin@votewise.app / platform123");
   console.log("  Org owner:      owner@achema.edu / owner123");
+  console.log("  Observer:       observer@achema.edu / owner123");
   console.log("  Voter identifier: VOT/2025000 .. VOT/2025014 (OTP shown in dev)");
   console.log("  Live election: election-sug-2025");
 }

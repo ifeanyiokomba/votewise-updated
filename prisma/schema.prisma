@@ -24,6 +24,8 @@ model Organization {
   category     String   @default("UNIVERSITY") // UNIVERSITY|COMPANY|COOPERATIVE|CHURCH|NGO|POLITICAL_PARTY|ASSOCIATION|GOVERNMENT
   status       String   @default("ACTIVE") // ACTIVE|SUSPENDED|ARCHIVED
   plan         String   @default("FREE") // FREE|PAYG|ENTERPRISE
+  voterQuota   Int      @default(100) // max voters allowed by plan
+  paidUntil    DateTime?
   locale       String   @default("en")
   timezone     String   @default("Africa/Lagos")
   createdAt    DateTime @default(now())

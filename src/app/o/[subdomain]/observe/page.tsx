@@ -100,6 +100,25 @@ export default function ObservePage() {
     );
   }
 
+  // role gating — only OBSERVER, ORG_ADMIN, ORG_OWNER, or PLATFORM_ADMIN can observe
+  const memberRole = meData?.data?.member?.role;
+  const canObserve = memberRole && ["PLATFORM_ADMIN", "ORG_OWNER", "ORG_ADMIN", "OBSERVER"].includes(memberRole);
+  if (memberRole && !canObserve) {
+    return (
+      <div className="vw-section py-20">
+        <Card className="mx-auto max-w-md">
+          <CardContent className="p-8 text-center">
+            <ShieldAlert className="mx-auto mb-3 size-10 text-warning" />
+            <h1 className="vw-display text-xl">Observer access required</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Your current role ({memberRole}) doesn't have observer permissions. Contact your organization admin to be assigned the Observer role.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (isLoading) return <PageLoader label="Loading incidents" />;
   const incidents = data?.data?.incidents ?? [];
 
