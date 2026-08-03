@@ -59,7 +59,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="vw-card">
+    <div className="vw-card vw-fade-up">
       <div className="mb-6">
         <h1 className="vw-display text-2xl">Create your organization</h1>
         <p className="mt-1 text-sm text-muted-foreground">

@@ -141,6 +141,9 @@ export default async function AdminPage() {
           </div>
         </div>
       </main>
+      <footer className="border-t border-border py-4 text-center">
+        <p className="text-xs text-muted-foreground">© 2026 Okomba Analytics. All rights reserved.</p>
+      </footer>
     </div>
   );
 }

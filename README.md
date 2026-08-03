@@ -113,4 +113,4 @@ bun run results      # results-service on :3030 (separate terminal)
 
 ## License
 
-Proprietary. © VoteWise.
+© 2026 Okomba Analytics. All rights reserved.

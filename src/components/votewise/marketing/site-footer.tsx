@@ -88,10 +88,10 @@ export function SiteFooter() {
 
         <div className="mt-12 flex flex-col items-start justify-between gap-4 border-t border-border pt-6 sm:flex-row sm:items-center">
           <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} VoteWise. Built for trust.
+            © 2026 Okomba Analytics. All rights reserved.
           </p>
           <p className="text-xs text-muted-foreground">
-            A next-generation rebuild — architecture, design &amp; engineering documentation in <code className="vw-mono text-foreground/80">/docs</code>.
+            VoteWise — The Voting Operating System. Architecture &amp; engineering docs in <code className="vw-mono text-foreground/80">/docs</code>.
           </p>
         </div>
       </div>

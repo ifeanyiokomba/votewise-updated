@@ -50,7 +50,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="vw-card">
+    <div className="vw-card vw-fade-up">
       <div className="mb-6">
         <h1 className="vw-display text-2xl">Sign in</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -59,7 +59,7 @@ export default function LoginPage() {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-1.5 vw-fade-up" style={{ animationDelay: "50ms" }}>
           <Label htmlFor="email">Email</Label>
           <Input id="email" type="email" autoComplete="email" {...register("email")} />
           {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}

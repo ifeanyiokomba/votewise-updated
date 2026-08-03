@@ -173,7 +173,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </div>
           <ThemeToggle />
         </header>
-        <main id="main-content" className="flex-1 overflow-y-auto votewise-scroll min-w-0">
+        <main id="main-content" className="flex-1 overflow-y-auto votewise-scroll min-w-0 vw-page-enter" key={pathname}>
           {children}
         </main>
       </div>

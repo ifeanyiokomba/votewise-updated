@@ -22,7 +22,7 @@ export default async function OrgLayout({
   return (
     <div className="flex min-h-screen flex-col">
       <OrgNav subdomain={subdomain} orgName={org.name} />
-      <main id="main-content" className="flex-1">{children}</main>
+      <main id="main-content" className="flex-1 vw-page-enter">{children}</main>
       <SiteFooter />
     </div>
   );

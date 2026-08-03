@@ -77,13 +77,13 @@ export function Hero() {
             </p>
 
             <div className="flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg" className="group">
+              <Button asChild size="lg" className="group text-base px-8 py-6 shadow-lg shadow-primary/20">
                 <Link href="/register">
                   Start an election
-                  <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+                  <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline">
+              <Button asChild size="lg" variant="outline" className="text-base px-6 py-6">
                 <Link href="/o/achema">See a live demo</Link>
               </Button>
             </div>
