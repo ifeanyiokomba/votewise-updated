@@ -423,3 +423,87 @@ Stage Summary:
   4. API key management (AIDP) — for developer/integration access
   5. Real Paystack/Stripe payment integration (currently demo billing)
   6. Two-factor authentication (2FA) UI for admin accounts
+
+---
+Task ID: CRON-QA-R7
+Agent: Z.ai Code (webDevReview cron)
+Task: Round 7 — PDF certificate export, member management, rich dashboard overview
+
+Work Log:
+- Reviewed worklog.md (CRON-QA-R6). Project stable with 12 feature areas + billing + observer gating + system theme.
+- Performed QA: all services healthy (app uptime 415s, results-service running), lint clean, landing page renders.
+- Identified highest-impact features from R6 recommendations:
+  1. Election results PDF export — for official certification documents
+  2. Member management — team invitation + role management (missing admin tooling)
+  3. Dashboard overview improvements — current overview was too simple
+
+New features built:
+1. Election certification document (print-to-PDF)
+   - New route: GET /api/dashboard/elections/[id]/certificate
+   - Returns a self-contained print-ready HTML document (no PDF library dependency)
+   - Browser's native print-to-PDF produces high-quality output
+   - Document includes:
+     - VoteWise branding header with green accent + certification seal
+     - Election summary stats (votes cast, eligible voters, turnout %)
+     - Timeline table (voting opened, closed, certified, document generated)
+     - Per-position results table with winner badges
+     - NOTA votes row when applicable
+     - Integrity verification section (audit hash + HMAC signature)
+     - Administrator signature line
+     - "Print / Save as PDF" button (hidden when printing)
+   - Print-optimized CSS (@media print) — removes shadows, padding, button
+   - "Certificate" button added to manage page header next to Export
+2. Member management dashboard (/dashboard/members)
+   - List all org members with colored avatars (colorFromString), name, email, role badge
+   - Role badges with icons: Owner (Crown), Admin (Shield), Observer (Eye)
+   - "Last active" timestamp (timeAgo)
+   - Invite form: name, email, role (Observer or Admin)
+   - Demo mode: generates a temp password shown in a info card (in prod, email sent)
+   - Copy-to-clipboard for temp password
+   - Member actions dropdown: change role (Admin <-> Observer), suspend/reactivate
+   - Org owner cannot be modified (protected)
+   - Current user marked with "(you)" label
+   - Audited (MEMBER_INVITED, MEMBER_UPDATED actions)
+   - API: GET (list), POST (invite), PATCH (update role/status) /api/dashboard/members
+3. Improved dashboard overview
+   - 6 KPI cards in a responsive grid: elections, live now, voters, votes, members, open incidents
+   - KPI cards with vw-lift hover effect + icon-coded categories + color-coded values
+   - Recent elections list with status badges + vote counts + live dot for LIVE elections
+   - Recent activity feed (last 8 audit entries) with action-specific icons:
+     - ELECTION_CREATED, VOTE_CAST, ELECTION_CERTIFIED, VOTER_FLAGGED, etc.
+   - Open incidents panel (only shown when incidents exist) with severity-coded badges
+   - Auto-refreshes every 15 seconds
+   - API: GET /api/dashboard/overview (aggregated stats + recent items)
+
+Styling improvements:
+- KPI cards: vw-lift hover + icon-coded categories with color tones
+- Member cards: colored avatars, role badges with icons, activity timestamps
+- Audit log feed: action-specific icons in muted circles, relative timestamps
+- Incident cards: left-border warning accent, severity badges
+- Certificate document: serif typography (Georgia), green accent (#163D2E), print-optimized CSS
+- Dropdown menu for member actions with role separator
+- Dashboard sidebar: added Members nav item (UserPlus icon) — now 7 items
+
+Verification (agent-browser):
+- Overview: shows 6 KPIs (2 elections, 1 live, 15 voters, 6 votes, 2 members, 1 incident)
+- Recent activity: "Dr. Adaeze Nwosu · login success, 5 seconds ago" + "Prof. Ibrahim Saleh · login success"
+- Members: invited "Dr. Chidi Okeke" (chidi@achema.edu) → temp password "r1oi4dbx" shown in info card
+- Members list: shows 3 members (owner, observer, newly invited) with avatars + roles
+- Certificate: clicked Certificate button → new tab opens with full certification document
+  - Title: "VoteWise Certification — SUG General Elections 2025"
+  - Content: "6 VOTES CAST, 15 ELIGIBLE VOTERS, 40.0% TURNOUT" + timeline + results
+  - "Print / Save as PDF" button present
+- Lint: 0 errors, 0 warnings
+
+Stage Summary:
+- Current status: STABLE. 13 feature areas + certificate export + member management + rich overview.
+- Completed modifications: 3 new features (certificate, members, overview) + 3 new API routes + 1 new page + 1 sidebar item.
+- Verification results: all features verified via agent-browser. Certificate renders. Member invitation works. Overview shows rich data.
+- Unresolved/risks: None critical. Certificate uses browser print-to-PDF (no server-side PDF generation) — acceptable for the use case.
+- Priority recommendations for next phase:
+  1. Voter notifications (email/SMS) — when election opens, when vote is received
+  2. Election results comparison view (cross-election analytics)
+  3. API key management (AIDP) — for developer/integration access
+  4. Real Paystack/Stripe payment integration (currently demo billing)
+  5. Two-factor authentication (2FA) UI for admin accounts
+  6. Webhook configuration page for election events
