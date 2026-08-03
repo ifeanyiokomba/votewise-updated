@@ -14,7 +14,7 @@ import { PageLoader, EmptyState } from "@/components/votewise/primitives/section
 import { ElectionMonitor } from "@/components/votewise/dashboard/election-monitor";
 import { VotersTab } from "@/components/votewise/dashboard/voters-tab";
 import { formatNumber, formatPercent, formatDateTime } from "@/lib/utils";
-import { Play, Pause, X, CheckCircle2, CalendarClock, Plus, Trash2, Users, Vote, Settings, Activity, Download } from "lucide-react";
+import { Play, Pause, X, CheckCircle2, CalendarClock, Plus, Trash2, Users, Vote, Settings, Activity, Download, FileText } from "lucide-react";
 
 interface ElectionData {
   ok: boolean;
@@ -148,6 +148,11 @@ export default function ManageElectionPage() {
           <Button asChild variant="outline" size="sm">
             <a href={`/api/dashboard/elections/${election.id}/export?format=csv`} download>
               <Download className="size-3.5" /> Export
+            </a>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <a href={`/api/dashboard/elections/${election.id}/certificate`} target="_blank" rel="noreferrer">
+              <FileText className="size-3.5" /> Certificate
             </a>
           </Button>
         </div>
