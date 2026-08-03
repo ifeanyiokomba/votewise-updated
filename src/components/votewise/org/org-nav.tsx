@@ -11,6 +11,8 @@ const TABS = [
   { label: "Portal", href: "" },
   { label: "Candidates", href: "/candidates" },
   { label: "Results", href: "/results" },
+  { label: "Archive", href: "/archive" },
+  { label: "Observe", href: "/observe" },
   { label: "Check", href: "/check" },
   { label: "Verify", href: "/verify" },
 ];

@@ -6,12 +6,15 @@ import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/votewise/primitives/theme-toggle";
-import { ShieldCheck, LayoutDashboard, Vote, Users, Settings, LogOut, ExternalLink } from "lucide-react";
+import { ShieldCheck, LayoutDashboard, Vote, Users, Settings, LogOut, ExternalLink, Megaphone, Flag } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 const NAV = [
   { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { label: "Elections", href: "/dashboard/elections", icon: Vote },
+  { label: "Announcements", href: "/dashboard/announcements", icon: Megaphone },
+  { label: "Incidents", href: "/dashboard/incidents", icon: Flag },
+  { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {

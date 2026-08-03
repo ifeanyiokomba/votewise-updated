@@ -102,6 +102,8 @@ model Election {
   tallies           CandidateTally[]
   verification      ElectionVerification?
   events            ElectionEvent[]
+  incidents         ElectionIncident[]
+  announcements     Announcement[]
 
   @@index([organizationId, status])
   @@index([organizationId, startTime])
@@ -367,4 +369,48 @@ model SupportTicket {
   priority    String   @default("NORMAL") // LOW|NORMAL|HIGH|URGENT
   status      String   @default("OPEN") // OPEN|ASSIGNED|RESOLVED|CLOSED
   createdAt   DateTime @default(now())
+}
+
+// ============================================================
+// Observer incidents & announcements
+// ============================================================
+
+model ElectionIncident {
+  id              String   @id @default(cuid())
+  electionId      String
+  organizationId  String
+  reporterId      String?
+  reporterName    String
+  reporterRole    String   @default("OBSERVER")
+  type            String   // VOTER_INTIMIDATION|SYSTEM_MALFUNCTION|IRREGULARITY|DISPUTE|TECHNICAL_ISSUE|OTHER
+  severity        String   @default("MEDIUM") // LOW|MEDIUM|HIGH|CRITICAL
+  status          String   @default("OPEN") // OPEN|INVESTIGATING|RESOLVED|DISMISSED
+  title           String
+  description     String
+  location        String?
+  resolution      String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  resolvedAt      DateTime?
+
+  election        Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
+
+  @@index([electionId, status])
+  @@index([organizationId, createdAt])
+}
+
+model Announcement {
+  id              String   @id @default(cuid())
+  organizationId  String
+  electionId      String?
+  title           String
+  body            String
+  severity        String   @default("INFO") // INFO|WARNING|CRITICAL
+  publishedAt     DateTime @default(now())
+  expiresAt       DateTime?
+
+  election        Election? @relation(fields: [electionId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, publishedAt])
+  @@index([electionId])
 }

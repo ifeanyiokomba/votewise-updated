@@ -1,7 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 
 // Bump to force a dev client refresh after schema changes.
-const SCHEMA_SIG = "vw-v1";
+const SCHEMA_SIG = "vw-v2-incidents";
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
