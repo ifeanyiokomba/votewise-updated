@@ -9,6 +9,8 @@ import {
   HowItWorks,
   SecuritySection,
   TrustSection,
+  VoterGuide,
+  StatsCounter,
   CTASection,
 } from "@/components/votewise/marketing/sections";
 
@@ -22,6 +24,8 @@ export default function Home() {
         <FeatureBento />
         <HowItWorks />
         <SecuritySection />
+        <StatsCounter />
+        <VoterGuide />
         <TrustSection />
         <CTASection />
       </main>

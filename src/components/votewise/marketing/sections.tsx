@@ -214,6 +214,79 @@ export function TrustSection() {
   );
 }
 
+/* ---- Voter education guide ---- */
+const GUIDE_STEPS = [
+  { step: "01", title: "Check your eligibility", body: "Enter your voter ID on your organization's portal to confirm you're registered for the election.", icon: Fingerprint },
+  { step: "02", title: "Receive your OTP", body: "A one-time password is sent to your email or phone. Enter it to securely access your ballot.", icon: Bell },
+  { step: "03", title: "Review the candidates", body: "Browse candidate profiles, manifestos, and slogans before making your choice.", icon: Users },
+  { step: "04", title: "Cast your vote", body: "Select your candidates, review your selections, and confirm. Your vote is encrypted instantly.", icon: Vote },
+  { step: "05", title: "Keep your receipt", body: "You'll receive a unique receipt code. Save it — it proves your vote was recorded.", icon: FileCheck },
+  { step: "06", title: "Verify anytime", body: "Use your receipt code to independently verify your vote exists on the public ledger.", icon: ShieldCheck },
+];
+
+export function VoterGuide() {
+  return (
+    <section id="guide" className="vw-section py-20 md:py-28">
+      <SectionHeader
+        eyebrow="Voter guide"
+        title={<>How to cast your vote in 6 simple steps</>}
+        subtitle="Designed for first-time voters. No technical knowledge required — if you can send a text message, you can vote on VoteWise."
+        align="center"
+        className="mb-14"
+      />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {GUIDE_STEPS.map((s, i) => (
+          <div
+            key={s.step}
+            className="vw-card vw-interactive vw-card-enter relative flex flex-col gap-3"
+            style={{ animationDelay: `${i * 60}ms` }}
+          >
+            <div className="flex items-center justify-between">
+              <span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary">
+                <s.icon className="size-5" />
+              </span>
+              <span className="vw-mono text-2xl font-light text-muted-foreground/30">{s.step}</span>
+            </div>
+            <h3 className="vw-display text-base">{s.title}</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">{s.body}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ---- Animated stats counter ---- */
+export function StatsCounter() {
+  return (
+    <section className="border-y border-border bg-background-subtle">
+      <div className="vw-section py-16 md:py-20">
+        <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
+          {[
+            { value: "0", label: "Votes lost", sub: "Transactional guarantee", icon: ShieldCheck, color: "text-success" },
+            { value: "AES-256", label: "Encryption", sub: "GCM authenticated", icon: Lock, color: "text-primary" },
+            { value: "99.99%", label: "Uptime SLA", sub: "Enterprise plan", icon: Clock, color: "text-info" },
+            { value: "WCAG 2.1", label: "Accessibility", sub: "AA compliant", icon: Smartphone, color: "text-accent" },
+          ].map((stat, i) => (
+            <div
+              key={stat.label}
+              className="flex flex-col items-center text-center vw-card-enter"
+              style={{ animationDelay: `${i * 80}ms` }}
+            >
+              <span className={`grid size-12 place-items-center rounded-xl bg-card mb-3 ${stat.color}`}>
+                <stat.icon className="size-6" />
+              </span>
+              <div className="vw-stat text-3xl md:text-4xl">{stat.value}</div>
+              <div className="mt-1 text-sm font-medium">{stat.label}</div>
+              <div className="text-xs text-muted-foreground">{stat.sub}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /* ---- Final CTA ---- */
 export function CTASection() {
   return (
