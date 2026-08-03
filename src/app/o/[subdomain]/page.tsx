@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { PageLoader, EmptyState, SectionHeader } from "@/components/votewise/primitives/section";
 import { formatNumber, formatPercent, formatDateTime } from "@/lib/utils";
 import { ELECTION_STATUSES } from "@/lib/constants";
-import { Vote, Users, CheckCircle2, Calendar, BarChart3, ArrowRight, Search } from "lucide-react";
+import { Vote, Users, CheckCircle2, Calendar, BarChart3, ArrowRight, Search, Megaphone, Info, AlertTriangle, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface PortalData {
@@ -34,6 +34,12 @@ export default function OrgPortalPage() {
       return res.json();
     },
   });
+
+  const { data: annData } = useQuery<{ ok: boolean; data: { announcements: Array<{ id: string; title: string; body: string; severity: string; publishedAt: string; election?: { name: string } | null }> } }>({
+    queryKey: ["portal-announcements", params.subdomain],
+    queryFn: async () => (await fetch(`/api/portal/${params.subdomain}/announcements`)).json(),
+  });
+  const announcements = annData?.data?.announcements ?? [];
 
   if (isLoading) return <PageLoader label="Loading organization" />;
   if (error || !data?.ok)
@@ -151,6 +157,34 @@ export default function OrgPortalPage() {
           </Card>
         </Link>
       </div>
+
+      {/* voter-facing announcements */}
+      {announcements.length > 0 && (
+        <div className="mt-10">
+          <SectionHeader eyebrow="Announcements" title={<>Latest updates</>} className="mb-4" />
+          <div className="flex flex-col gap-2">
+            {announcements.map((a) => {
+              const Icon = a.severity === "CRITICAL" ? AlertCircle : a.severity === "WARNING" ? AlertTriangle : Info;
+              const tone = a.severity === "CRITICAL" ? "border-destructive/30 bg-destructive/5 text-destructive" : a.severity === "WARNING" ? "border-warning/30 bg-warning/5 text-warning" : "border-info/30 bg-info/5 text-info";
+              return (
+                <Card key={a.id} className={cn("border-l-4", tone)}>
+                  <CardContent className="p-4 flex items-start gap-3">
+                    <Icon className="size-4 shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-sm font-medium">{a.title}</h3>
+                        {a.election?.name && <span className="text-xs text-muted-foreground">· {a.election.name}</span>}
+                      </div>
+                      <p className="mt-0.5 text-sm text-muted-foreground">{a.body}</p>
+                      <span className="text-xs text-muted-foreground">{formatDateTime(a.publishedAt)}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* elections list */}
       <div className="mt-12">

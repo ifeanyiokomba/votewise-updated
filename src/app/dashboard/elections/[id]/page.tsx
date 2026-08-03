@@ -12,8 +12,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageLoader, EmptyState } from "@/components/votewise/primitives/section";
 import { ElectionMonitor } from "@/components/votewise/dashboard/election-monitor";
+import { VotersTab } from "@/components/votewise/dashboard/voters-tab";
 import { formatNumber, formatPercent, formatDateTime } from "@/lib/utils";
-import { Play, Pause, X, CheckCircle2, CalendarClock, Plus, Trash2, Users, Vote, Settings, Activity } from "lucide-react";
+import { Play, Pause, X, CheckCircle2, CalendarClock, Plus, Trash2, Users, Vote, Settings, Activity, Download } from "lucide-react";
 
 interface ElectionData {
   ok: boolean;
@@ -135,15 +136,22 @@ export default function ManageElectionPage() {
             {formatDateTime(election.startTime)} → {formatDateTime(election.endTime)}
           </p>
         </div>
-        {next && (
-          <Button
-            onClick={() => lifecycle.mutate(next.action)}
-            disabled={lifecycle.isPending}
-            className={next.tone === "success" ? "bg-success text-success-foreground hover:bg-success/90" : next.tone === "warning" ? "bg-warning text-warning-foreground hover:bg-warning/90" : ""}
-          >
-            <next.icon className="size-4" /> {next.label}
+        <div className="flex items-center gap-2">
+          {next && (
+            <Button
+              onClick={() => lifecycle.mutate(next.action)}
+              disabled={lifecycle.isPending}
+              className={next.tone === "success" ? "bg-success text-success-foreground hover:bg-success/90" : next.tone === "warning" ? "bg-warning text-warning-foreground hover:bg-warning/90" : ""}
+            >
+              <next.icon className="size-4" /> {next.label}
+            </Button>
+          )}
+          <Button asChild variant="outline" size="sm">
+            <a href={`/api/dashboard/elections/${election.id}/export?format=csv`} download>
+              <Download className="size-3.5" /> Export
+            </a>
           </Button>
-        )}
+        </div>
       </div>
 
       {/* stats strip */}
@@ -247,9 +255,7 @@ export default function ManageElectionPage() {
               </Button>
             </CardContent></Card>
           ) : (
-            <Card><CardContent className="p-5 text-sm text-muted-foreground">
-              {formatNumber(stats.totalEligible)} voters are eligible for this election. Voter import is locked.
-            </CardContent></Card>
+            <VotersTab electionId={election.id} canImport={false} />
           )}
         </TabsContent>
 
