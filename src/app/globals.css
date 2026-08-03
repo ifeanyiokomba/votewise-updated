@@ -525,6 +525,28 @@
 .vw-stagger-6 { animation-delay: 300ms; }
 
 /* ============================================================
+   Card entrance (scale + fade, for grid items)
+   ============================================================ */
+@keyframes vw-card-enter {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.vw-card-enter {
+  animation: vw-card-enter 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ============================================================
+   Slide-in from left (for sidebar nav items)
+   ============================================================ */
+@keyframes vw-slide-left {
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.vw-slide-left {
+  animation: vw-slide-left 0.3s ease-out both;
+}
+
+/* ============================================================
    Accessibility modes (user toggles via next-themes class)
    ============================================================ */
 .high-contrast {

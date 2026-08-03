@@ -6,6 +6,7 @@ import { ArrowRight, ShieldCheck, CheckCircle2, Vote, BarChart3 } from "lucide-r
 import { useEffect, useState } from "react";
 import { TypingText } from "@/components/votewise/primitives/typing-text";
 import { DataFlowBackground } from "@/components/votewise/primitives/data-flow-background";
+import { CandidateOrbs } from "@/components/votewise/primitives/candidate-orbs";
 
 const PIPELINE = [
   { label: "Voter verified", icon: ShieldCheck, color: "text-success" },
@@ -44,12 +45,13 @@ export function Hero() {
 
   return (
     <section className="relative votewise-hero-bg overflow-hidden">
-      {/* Data flow animated background */}
+      {/* Data flow + candidate orbs animated background */}
       <DataFlowBackground />
-      <div className="votewise-grid-bg absolute inset-0 opacity-20" aria-hidden />
+      <CandidateOrbs />
+      <div className="votewise-grid-bg absolute inset-0 opacity-15" aria-hidden />
 
-      <div className="vw-section relative py-20 md:py-28">
-        <div className="grid gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-16 items-center">
+      <div className="vw-section relative py-12 md:py-20 lg:py-28">
+        <div className="grid gap-8 sm:gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-16 items-center">
           {/* Left: copy */}
           <div className="flex flex-col gap-6 vw-fade-up">
             <div className="inline-flex w-fit items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1.5 text-xs">
@@ -57,7 +59,7 @@ export function Hero() {
               <span className="text-muted-foreground">Election-grade infrastructure</span>
             </div>
 
-            <h1 className="vw-display text-4xl md:text-5xl lg:text-6xl leading-[1.05] tracking-tight">
+            <h1 className="vw-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl leading-[1.05] tracking-tight">
               Elections you can
               <br />
               <TypingText
@@ -76,15 +78,15 @@ export function Hero() {
               hash-chained audit trail — built for universities, cooperatives, and institutions.
             </p>
 
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg" className="group text-base px-8 py-6 shadow-lg shadow-primary/20">
+            <div className="flex gap-2 sm:gap-3">
+              <Button asChild className="group flex-1 text-sm sm:text-base shadow-lg shadow-primary/20">
                 <Link href="/register">
-                  Start an election
+                  Start now
                   <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="text-base px-6 py-6">
-                <Link href="/o/achema">See a live demo</Link>
+              <Button asChild variant="outline" className="flex-1 text-sm sm:text-base">
+                <Link href="/o/achema">Live demo</Link>
               </Button>
             </div>
 

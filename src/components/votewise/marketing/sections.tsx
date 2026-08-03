@@ -63,10 +63,11 @@ export function FeatureBento() {
         className="mb-12"
       />
       <div className="grid gap-4 md:grid-cols-3">
-        {FEATURES.map((f) => (
+        {FEATURES.map((f, i) => (
           <div
             key={f.title}
-            className={`vw-card vw-interactive flex flex-col gap-3 ${f.span ?? ""}`}
+            className={`vw-card vw-interactive vw-card-enter flex flex-col gap-3 ${f.span ?? ""}`}
+            style={{ animationDelay: `${i * 80}ms` }}
           >
             <span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary">
               <f.icon className="size-5" />
@@ -103,7 +104,7 @@ export function HowItWorks() {
         />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {STEPS.map((s, i) => (
-            <div key={s.title} className="vw-card vw-interactive relative flex flex-col gap-3">
+            <div key={s.title} className="vw-card vw-interactive vw-card-enter relative flex flex-col gap-3" style={{ animationDelay: `${i * 70}ms` }}>
               <div className="flex items-center justify-between">
                 <span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary">
                   <s.icon className="size-5" />
@@ -140,8 +141,8 @@ export function SecuritySection() {
         className="mb-12"
       />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {SECURITY.map((s) => (
-          <div key={s.title} className="vw-card-subtle vw-interactive flex flex-col gap-3">
+        {SECURITY.map((s, i) => (
+          <div key={s.title} className="vw-card-subtle vw-interactive vw-card-enter flex flex-col gap-3" style={{ animationDelay: `${i * 60}ms` }}>
             <span className="grid size-9 place-items-center rounded-lg bg-card text-primary">
               <s.icon className="size-4" />
             </span>
