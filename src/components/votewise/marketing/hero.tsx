@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, ShieldCheck, CheckCircle2, Vote, BarChart3 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { TypingText } from "@/components/votewise/primitives/typing-text";
-import { SpiralBackground } from "@/components/votewise/primitives/spiral-background";
+import { DataFlowBackground } from "@/components/votewise/primitives/data-flow-background";
 
 const PIPELINE = [
   { label: "Voter verified", icon: ShieldCheck, color: "text-success" },
@@ -44,9 +44,9 @@ export function Hero() {
 
   return (
     <section className="relative votewise-hero-bg overflow-hidden">
-      {/* Spiral animated background */}
-      <SpiralBackground />
-      <div className="votewise-grid-bg absolute inset-0 opacity-30" aria-hidden />
+      {/* Data flow animated background */}
+      <DataFlowBackground />
+      <div className="votewise-grid-bg absolute inset-0 opacity-20" aria-hidden />
 
       <div className="vw-section relative py-20 md:py-28">
         <div className="grid gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-16 items-center">

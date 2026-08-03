@@ -2,6 +2,7 @@ import { SiteNav } from "@/components/votewise/marketing/site-nav";
 import { SiteFooter } from "@/components/votewise/marketing/site-footer";
 import { Hero } from "@/components/votewise/marketing/hero";
 import { NotificationPopups } from "@/components/votewise/primitives/notification-popups";
+import { ChatbotWidget } from "@/components/votewise/primitives/chatbot-widget";
 import {
   TrustStrip,
   FeatureBento,
@@ -26,6 +27,7 @@ export default function Home() {
       </main>
       <SiteFooter />
       <NotificationPopups />
+      <ChatbotWidget />
     </div>
   );
 }
