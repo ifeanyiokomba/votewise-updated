@@ -11,8 +11,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageLoader, EmptyState } from "@/components/votewise/primitives/section";
+import { ElectionMonitor } from "@/components/votewise/dashboard/election-monitor";
 import { formatNumber, formatPercent, formatDateTime } from "@/lib/utils";
-import { Play, Pause, X, CheckCircle2, CalendarClock, Plus, Trash2, Users, Vote, Settings } from "lucide-react";
+import { Play, Pause, X, CheckCircle2, CalendarClock, Plus, Trash2, Users, Vote, Settings, Activity } from "lucide-react";
 
 interface ElectionData {
   ok: boolean;
@@ -155,6 +156,7 @@ export default function ManageElectionPage() {
       <Tabs defaultValue="positions">
         <TabsList>
           <TabsTrigger value="positions"><Vote className="size-3.5 mr-1" /> Positions</TabsTrigger>
+          <TabsTrigger value="monitor"><Activity className="size-3.5 mr-1" /> Monitor</TabsTrigger>
           <TabsTrigger value="voters"><Users className="size-3.5 mr-1" /> Voters</TabsTrigger>
           <TabsTrigger value="settings"><Settings className="size-3.5 mr-1" /> Settings</TabsTrigger>
         </TabsList>
@@ -226,6 +228,11 @@ export default function ManageElectionPage() {
               </Card>
             )}
           </div>
+        </TabsContent>
+
+        {/* monitor */}
+        <TabsContent value="monitor" className="mt-4">
+          <ElectionMonitor electionId={election.id} />
         </TabsContent>
 
         {/* voters */}

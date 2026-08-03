@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -41,6 +41,12 @@ export default function VotePage() {
   const [ballot, setBallot] = useState<BallotView | null>(null);
   const [selections, setSelections] = useState<Record<string, string>>({});
   const [receipts, setReceipts] = useState<Array<{ positionId: string; receiptCode: string }>>([]);
+  const topRef = useRef<HTMLDivElement>(null);
+
+  // scroll to top on step change so action buttons are never covered
+  useEffect(() => {
+    topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [step]);
 
   // ---- eligibility + send OTP ----
   const sendOtpMut = useMutation({
@@ -154,7 +160,7 @@ export default function VotePage() {
   const currentIdx = steps.findIndex((s) => s.id === step);
 
   return (
-    <div className="vw-section py-10 md:py-14">
+    <div className="vw-section py-10 md:py-14 pb-32" ref={topRef}>
       {/* stepper */}
       <div className="mb-8 flex items-center gap-2 overflow-x-auto votewise-scroll pb-2">
         {steps.map((s, i) => (

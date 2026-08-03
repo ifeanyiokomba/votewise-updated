@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { PageLoader, EmptyState, SectionHeader } from "@/components/votewise/primitives/section";
 import { formatNumber, formatPercent, formatDateTime } from "@/lib/utils";
 import { ELECTION_STATUSES } from "@/lib/constants";
-import { Vote, Users, CheckCircle2, Calendar, BarChart3, ArrowRight } from "lucide-react";
+import { Vote, Users, CheckCircle2, Calendar, BarChart3, ArrowRight, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface PortalData {
@@ -108,6 +108,49 @@ export default function OrgPortalPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* quick actions */}
+      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <Link href={`/o/${params.subdomain}/check`}>
+          <Card className="vw-interactive vw-lift h-full cursor-pointer">
+            <CardContent className="p-4 flex items-center gap-3">
+              <span className="grid size-9 place-items-center rounded-md bg-info/10 text-info">
+                <Search className="size-4" />
+              </span>
+              <div>
+                <div className="text-sm font-medium">Check eligibility</div>
+                <div className="text-xs text-muted-foreground">Am I registered?</div>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href={`/o/${params.subdomain}/candidates${live ? `?election=${live.id}` : ""}`}>
+          <Card className="vw-interactive vw-lift h-full cursor-pointer">
+            <CardContent className="p-4 flex items-center gap-3">
+              <span className="grid size-9 place-items-center rounded-md bg-primary/10 text-primary">
+                <Vote className="size-4" />
+              </span>
+              <div>
+                <div className="text-sm font-medium">View candidates</div>
+                <div className="text-xs text-muted-foreground">Meet the contenders</div>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href={`/o/${params.subdomain}/verify`}>
+          <Card className="vw-interactive vw-lift h-full cursor-pointer">
+            <CardContent className="p-4 flex items-center gap-3">
+              <span className="grid size-9 place-items-center rounded-md bg-success/10 text-success">
+                <CheckCircle2 className="size-4" />
+              </span>
+              <div>
+                <div className="text-sm font-medium">Verify receipt</div>
+                <div className="text-xs text-muted-foreground">Confirm a vote</div>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+      </div>
 
       {/* elections list */}
       <div className="mt-12">
