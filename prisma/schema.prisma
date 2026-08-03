@@ -436,3 +436,24 @@ model Webhook {
 
   @@index([organizationId, isActive])
 }
+
+// ============================================================
+// API Keys (developer platform)
+// ============================================================
+
+model ApiKey {
+  id              String   @id @default(cuid())
+  organizationId  String
+  name            String
+  keyPrefix       String   // first 8 chars for identification
+  keyHash         String   @unique // sha256 of full key
+  scopes          String   // JSON array: ["read:elections","write:votes",...]
+  environment     String   @default("production") // production|sandbox
+  isActive        Boolean  @default(true)
+  lastUsedAt      DateTime?
+  expiresAt       DateTime?
+  createdAt       DateTime @default(now())
+
+  @@index([organizationId, isActive])
+  @@index([keyHash])
+}

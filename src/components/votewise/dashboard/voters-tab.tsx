@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo, useEffect } from "react";
 import { toast } from "sonner";
+import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -146,7 +147,9 @@ export function VotersTab({ electionId, canImport }: { electionId: string; canIm
                   <td className="px-4 py-2.5">
                     <div className="flex items-center gap-2">
                       {v.flagged && <Flag className="size-3.5 text-destructive" />}
-                      <span className="font-medium">{v.fullName}</span>
+                      <Link href={`/dashboard/voters/${v.id}`} className="font-medium hover:text-primary hover:underline">
+                        {v.fullName}
+                      </Link>
                     </div>
                     {v.flagged && v.flaggedReason && (
                       <div className="text-xs text-destructive">{v.flaggedReason}</div>

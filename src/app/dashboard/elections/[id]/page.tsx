@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,7 @@ import { PageLoader, EmptyState } from "@/components/votewise/primitives/section
 import { ElectionMonitor } from "@/components/votewise/dashboard/election-monitor";
 import { VotersTab } from "@/components/votewise/dashboard/voters-tab";
 import { formatNumber, formatPercent, formatDateTime } from "@/lib/utils";
-import { Play, Pause, X, CheckCircle2, CalendarClock, Plus, Trash2, Users, Vote, Settings, Activity, Download, FileText } from "lucide-react";
+import { Play, Pause, X, CheckCircle2, CalendarClock, Plus, Trash2, Users, Vote, Settings, Activity, Download, FileText, Copy } from "lucide-react";
 
 interface ElectionData {
   ok: boolean;
@@ -39,6 +39,7 @@ const NEXT_ACTION: Record<string, { action: string; label: string; icon: typeof 
 
 export default function ManageElectionPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const qc = useQueryClient();
   const [newPos, setNewPos] = useState({ title: "", description: "", maxVotes: 1 });
   const [newCand, setNewCand] = useState<Record<string, { name: string; slogan: string }>>({});
@@ -115,6 +116,21 @@ export default function ManageElectionPage() {
     },
   });
 
+  const cloneMut = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/dashboard/elections/${params.id}/clone`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      return res.json();
+    },
+    onSuccess: (d) => {
+      if (d.ok) { toast.success(`Cloned as "${d.data.election.name}"`); router.push(`/dashboard/elections/${d.data.election.id}`); }
+      else toast.error(d.error?.message ?? "Failed to clone");
+    },
+  });
+
   if (isLoading) return <PageLoader label="Loading election" />;
   if (!data?.ok) return <div className="p-8"><EmptyState title="Election not found" /></div>;
 
@@ -154,6 +170,9 @@ export default function ManageElectionPage() {
             <a href={`/api/dashboard/elections/${election.id}/certificate`} target="_blank" rel="noreferrer">
               <FileText className="size-3.5" /> Certificate
             </a>
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => cloneMut.mutate()} disabled={cloneMut.isPending}>
+            <Copy className="size-3.5" /> {cloneMut.isPending ? "Cloning…" : "Clone"}
           </Button>
         </div>
       </div>
