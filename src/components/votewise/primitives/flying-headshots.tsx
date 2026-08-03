@@ -83,7 +83,7 @@ export function FlyingHeadshots() {
             left: pos.left,
             zIndex: pos.z,
             opacity: 0,
-            animation: `vw-fade-in 0.8s ease-out ${pos.delay}s forwards`,
+            animation: `votewise-fade-in 0.8s ease-out ${pos.delay}s forwards`,
           }}
         >
           {/* Glowing ring around the headshot */}
