@@ -95,19 +95,20 @@ diagrams. Highlights:
 
 ## Pushing to your own `votewise-updated` repository
 
-This sandbox does not have `gh` CLI or GitHub auth configured. To push to your own repo:
+This repository is live at **https://github.com/ifeanyiokomba/votewise-updated**.
+
+Production domain: **votewise.com.ng** (with org subdomains like `achema.votewise.com.ng`).
+
+To clone and run locally:
 
 ```bash
-# 1. Create the repo on GitHub (web UI or gh CLI on your machine):
-#    gh repo create votewise-updated --public
-
-# 2. From this project directory:
-git init
-git add -A
-git commit -m "VoteWise — next-generation rebuild"
-git branch -M main
-git remote add origin git@github.com:<your-username>/votewise-updated.git
-git push -u origin main
+git clone https://github.com/ifeanyiokomba/votewise-updated.git
+cd votewise-updated
+bun install
+bun run db:push
+bun run db:seed
+bun run dev          # app on :3000
+bun run results      # results-service on :3030 (separate terminal)
 ```
 
 ## License

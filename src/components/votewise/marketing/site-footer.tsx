@@ -32,7 +32,7 @@ const COLUMNS = [
     links: [
       { label: "Trust & security", href: "/#trust" },
       { label: "Compliance", href: "/#trust" },
-      { label: "Contact", href: "mailto:hello@votewise.app" },
+      { label: "Contact", href: "mailto:hello@votewise.com.ng" },
     ],
   },
 ];
