@@ -16,38 +16,10 @@ const SUGGESTIONS = [
   "What security do you use?",
 ];
 
-const BOT_RESPONSES: Record<string, string> = {
-  "how does voting work":
-    "Voting is simple: 1) Verify your identity with your voter ID. 2) Receive a one-time OTP via email or SMS. 3) Enter the code to access your ballot. 4) Select your candidates. 5) Confirm and cast — your vote is encrypted with AES-256-GCM. 6) Keep your receipt code to verify your vote was recorded.",
-  "is my vote anonymous":
-    "Yes. Your vote is encrypted with AES-256-GCM and stored with a one-way voterHash (SHA-256 of voterId + electionId + pepper). The receipt code is unlinkable — it proves you voted without revealing who you voted for. Even database administrators cannot link a receipt to a choice.",
-  "how do i verify a receipt":
-    "Go to your organization's portal at /o/:subdomain/verify and enter your receipt code (format: VW-2025-XXXXXXXX). The system confirms the vote exists on the ledger without revealing the candidate chosen. You can also verify via the public API.",
-  "what security do you use":
-    "VoteWise uses 5 layers of security: 1) AES-256-GCM vote encryption. 2) HMAC-SHA256 ballot signatures. 3) Hash-chained audit log (SHA-256). 4) scrypt password hashing. 5) JWT + HttpOnly cookies for admin auth. Plus rate limiting, 2FA, and tenant isolation.",
-};
-
-function getBotResponse(input: string): string {
-  const lower = input.toLowerCase();
-  for (const [key, response] of Object.entries(BOT_RESPONSES)) {
-    if (lower.includes(key)) return response;
-  }
-  if (lower.includes("hello") || lower.includes("hi") || lower.includes("hey")) {
-    return "Hello! I'm VoteWise AI. I can help you understand how secure voting works, how to verify receipts, or answer security questions. What would you like to know?";
-  }
-  if (lower.includes("price") || lower.includes("cost") || lower.includes("plan")) {
-    return "VoteWise offers 3 plans: Free (100 voters, $0/mo), Pay-as-you-go (1,000 voters, $25/mo), and Enterprise (50,000 voters, $200/mo). Visit the billing page in your dashboard to upgrade.";
-  }
-  if (lower.includes("register") || lower.includes("sign up") || lower.includes("create")) {
-    return "To create an organization, click 'Get started' on the homepage. You'll provide your organization name, subdomain, and owner credentials. It takes less than a minute!";
-  }
-  return "I can help with questions about voting, security, receipts, and pricing. Try asking 'How does voting work?' or 'Is my vote anonymous?'";
-}
-
 export function ChatbotWidget() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    { role: "bot", content: "Hi! I'm VoteWise AI. Ask me about voting, security, or how to verify your receipt." },
+    { role: "bot", content: "Hi! I'm VoteWise AI, powered by a real language model. Ask me about voting, security, receipts, or anything about VoteWise." },
   ]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -59,20 +31,38 @@ export function ChatbotWidget() {
     }
   }, [messages, isTyping]);
 
-  const send = (text?: string) => {
+  const send = async (text?: string) => {
     const content = (text ?? input).trim();
-    if (!content) return;
+    if (!content || isTyping) return;
 
-    setMessages((prev) => [...prev, { role: "user", content }]);
+    const userMessage: Message = { role: "user", content };
+    setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsTyping(true);
 
-    // Simulate AI response with typing delay
-    setTimeout(() => {
-      const response = getBotResponse(content);
-      setMessages((prev) => [...prev, { role: "bot", content: response }]);
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          messages: [...messages, userMessage].map((m) => ({
+            role: m.role === "bot" ? "assistant" : "user",
+            content: m.content,
+          })),
+        }),
+      });
+      const data = await res.json();
+
+      if (data.ok) {
+        setMessages((prev) => [...prev, { role: "bot", content: data.data.response }]);
+      } else {
+        setMessages((prev) => [...prev, { role: "bot", content: "Sorry, I had trouble processing that. Please try again." }]);
+      }
+    } catch {
+      setMessages((prev) => [...prev, { role: "bot", content: "Network error. Please check your connection and try again." }]);
+    } finally {
       setIsTyping(false);
-    }, 800 + Math.random() * 600);
+    }
   };
 
   return (
@@ -86,7 +76,7 @@ export function ChatbotWidget() {
         >
           <MessageCircle className="size-6" />
           {/* Notification badge */}
-          <span className="absolute -top-1 -right-1 grid size-5 place-items-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground">
+          <span className="absolute -top-1 -right-1 grid size-5 place-items-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground vw-notif-enter">
             1
           </span>
         </button>
@@ -106,7 +96,7 @@ export function ChatbotWidget() {
                   <div className="text-sm font-medium">VoteWise AI</div>
                   <div className="flex items-center gap-1.5 text-xs text-success">
                     <span className="votewise-live-dot" style={{ width: 6, height: 6 }} />
-                    Online
+                    Online · LLM-powered
                   </div>
                 </div>
               </div>
@@ -120,7 +110,7 @@ export function ChatbotWidget() {
             </div>
 
             {/* Messages */}
-            <div ref={scrollRef} className="flex-1 overflow-y-auto votewise-scroll p-4 flex flex-col gap-3" style={{ minHeight: "200px" }}>
+            <div ref={scrollRef} className="flex-1 overflow-y-auto votewise-scroll p-4 flex flex-col gap-3" style={{ minHeight: "200px", maxHeight: "calc(70vh - 140px)" }}>
               {messages.map((msg, i) => (
                 <div
                   key={i}
@@ -139,7 +129,7 @@ export function ChatbotWidget() {
                   </span>
                   <div
                     className={cn(
-                      "rounded-2xl px-3.5 py-2.5 text-sm",
+                      "rounded-2xl px-3.5 py-2.5 text-sm whitespace-pre-wrap",
                       msg.role === "bot"
                         ? "bg-muted rounded-tl-sm"
                         : "bg-primary text-primary-foreground rounded-tr-sm"
@@ -194,7 +184,7 @@ export function ChatbotWidget() {
               />
               <button
                 onClick={() => send()}
-                disabled={!input.trim()}
+                disabled={!input.trim() || isTyping}
                 className="grid size-9 place-items-center rounded-lg bg-primary text-primary-foreground disabled:opacity-40 hover:opacity-90 transition-opacity"
                 aria-label="Send message"
               >

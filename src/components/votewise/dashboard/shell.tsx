@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/votewise/primitives/theme-toggle";
 import { ShieldCheck, LayoutDashboard, Vote, Users, Settings, LogOut, ExternalLink, Megaphone, Flag, Menu, X, CreditCard, UserPlus, BarChart3, Webhook, Lock, Key, Eye, Bell, Globe, ScrollText, Calendar, GitCompare } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { VoteWiseLogo } from "@/components/votewise/primitives/logo";
 import {
   Sheet, SheetContent, SheetTrigger, SheetTitle,
 } from "@/components/ui/sheet";
@@ -61,11 +62,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen flex-col md:flex-row">
       {/* sidebar */}
       <aside className="hidden md:flex w-60 shrink-0 flex-col border-r border-border bg-sidebar">
-        <div className="flex h-14 items-center gap-2 border-b border-border px-4">
-          <span className="grid size-7 place-items-center rounded-md bg-primary text-primary-foreground">
-            <ShieldCheck className="size-4" />
-          </span>
-          <span className="vw-display text-sm">VoteWise</span>
+        <div className="flex h-14 items-center border-b border-border px-4">
+          <VoteWiseLogo size={28} showWordmark={true} />
         </div>
         <nav className="flex-1 space-y-1 p-3" aria-label="Dashboard">
           {NAV.map((item) => {
@@ -134,12 +132,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               <SheetContent side="left" className="w-64 p-0">
                 <SheetTitle className="sr-only">Navigation</SheetTitle>
                 <div className="flex h-14 items-center justify-between border-b border-border px-4">
-                  <div className="flex items-center gap-2">
-                    <span className="grid size-7 place-items-center rounded-md bg-primary text-primary-foreground">
-                      <ShieldCheck className="size-4" />
-                    </span>
-                    <span className="vw-display text-sm">VoteWise</span>
-                  </div>
+                  <VoteWiseLogo size={24} />
                   <Button variant="ghost" size="icon" onClick={() => setMobileOpen(false)} aria-label="Close">
                     <X className="size-4" />
                   </Button>
@@ -176,7 +169,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 )}
               </SheetContent>
             </Sheet>
-            <span className="vw-display text-sm">VoteWise</span>
+            <VoteWiseLogo size={24} />
           </div>
           <ThemeToggle />
         </header>

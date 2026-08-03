@@ -4,8 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/votewise/primitives/theme-toggle";
-import { ShieldCheck, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { VoteWiseLogo } from "@/components/votewise/primitives/logo";
 
 const TABS = [
   { label: "Portal", href: "" },
@@ -30,9 +31,7 @@ export function OrgNav({ subdomain, orgName }: { subdomain: string; orgName: str
             <ArrowLeft className="size-4" />
           </Link>
           <div className="flex items-center gap-2">
-            <span className="grid size-6 place-items-center rounded bg-primary text-primary-foreground">
-              <ShieldCheck className="size-3.5" />
-            </span>
+            <VoteWiseLogo size={24} showWordmark={false} />
             <span className="vw-display text-sm">{orgName}</span>
           </div>
         </div>
