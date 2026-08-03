@@ -164,7 +164,7 @@ export function SiteNav() {
 
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden" aria-label="Open menu">
+              <Button variant="ghost" size="icon" className="md:hidden" aria-label="Open menu" suppressHydrationWarning>
                 <Menu className="size-5" />
               </Button>
             </SheetTrigger>
