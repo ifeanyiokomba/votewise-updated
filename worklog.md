@@ -282,3 +282,77 @@ Stage Summary:
   4. Election results PDF export (beyond CSV)
   5. Real-time voter count on portal (socket.io integration)
   6. Voter notifications (email/SMS when election opens)
+
+---
+Task ID: CRON-QA-R5
+Agent: Z.ai Code (webDevReview cron)
+Task: Round 5 — Mobile nav, live turnout widget, voter flagging
+
+Work Log:
+- Reviewed worklog.md (CRON-QA-R4). Project stable with 10 feature areas.
+- Performed QA via agent-browser with iPhone 15 device emulation:
+  - Landing, portal, results, vote pages: no horizontal overflow
+  - Dashboard manage page: horizontal overflow detected (main scrollWidth > clientWidth)
+  - Dashboard sidebar: hidden on mobile with no hamburger menu (navigation dead-end)
+- Identified highest-impact fixes:
+  1. Mobile dashboard navigation (critical — can't navigate on mobile)
+  2. Dashboard manage page overflow (broken layout)
+  3. Real-time voter turnout on portal (high-value feature)
+  4. Voter flag/unflag (admin tooling gap)
+
+Bug fixes:
+- Dashboard manage page horizontal overflow: the header used md:flex-row with items in a row that overflowed. Fixed by restructuring to flex-col with flex-wrap on the title row + min-w-0 + break-words on the heading + size="sm" on buttons + p-4 md:p-8 responsive padding.
+- Main content area overflow: added min-w-0 to the flex child containing main, preventing content from pushing the layout wider than the viewport.
+
+New features built:
+1. Mobile navigation drawer for dashboard
+   - Added hamburger menu (Menu icon) to the mobile header
+   - Opens a Sheet (left side, 264px) with full navigation:
+     - VoteWise logo + close button
+     - All 5 nav items (Overview, Elections, Announcements, Incidents, Settings)
+     - Active item highlighting
+     - Member info (name + email)
+     - Sign out button
+   - Closes on navigation
+2. Real-time live turnout widget on org portal
+   - New LiveTurnout component with animated SVG progress ring
+   - Shows turnout % in the center of the ring (color-coded: >60% green, >30% primary, else muted)
+   - Voted + Eligible counts below the ring
+   - Election name with live dot indicator
+   - Updates via socket.io (joinElectionRoom) + 10s polling fallback
+   - Loading skeleton state (animate-pulse) while data loads
+   - Placed in a 2-column grid alongside the live election callout
+3. Voter flag/unflag
+   - New API: PATCH /api/dashboard/voters/[id] with flagged + flaggedReason fields
+   - VotersTab now has an Actions column with Flag/Unflag buttons
+   - Flag button prompts for a reason, then flags the voter (row highlighted red, flag icon shown)
+   - Unflag button clears the flag
+   - Flagged voters are blocked from voting by the existing SVE guard
+   - Disabled for voters who have already voted (can't flag a completed vote)
+   - Audited (VOTER_FLAGGED / VOTER_UNFLAGGED actions)
+
+Styling improvements:
+- Portal live election callout now uses a 2-column grid (callout 1.5fr + turnout ring 1fr) on lg+ screens, stacking on mobile
+- Voter table: flagged rows highlighted with bg-destructive/5
+- Flag/Unflag buttons with severity-coded colors (Flag=destructive, Unflag=success)
+- Mobile manage page: responsive padding (p-4 md:p-8), wrapping buttons, smaller heading on mobile
+- Live turnout ring with smooth 700ms transition on the stroke-dashoffset
+
+Verification (agent-browser):
+- Mobile dashboard: no horizontal overflow (0px difference), hamburger menu opens Sheet with all nav items
+- Portal (desktop): shows live turnout widget with "40%" ring, "Voted 6, Eligible 15", live dot
+- Voters tab: clicked Flag on Aisha Bello → prompted for reason → entered "Test flagging" → row now shows red flag + reason + Unflag button
+- Lint: 0 errors, 0 warnings
+
+Stage Summary:
+- Current status: STABLE. 11 feature areas + mobile nav + live turnout + voter flagging. All responsive.
+- Completed modifications: 1 bug fix (overflow), 1 mobile nav feature, 1 real-time feature, 1 admin tooling feature, 1 new API, 1 new component.
+- Verification results: all features verified via agent-browser (desktop + iPhone 15). Mobile overflow fixed. Live turnout renders. Flag/unflag works.
+- Unresolved/risks: None critical. The Radix UI Tabs still require keyboard navigation in agent-browser (Space/Enter) — not a real user issue.
+- Priority recommendations for next phase:
+  1. Billing/subscription management (BSPCM) — Organization.plan + paidUntil fields exist, Paystack integration is the biggest remaining extension point
+  2. Observer role gating — currently any logged-in member can observe; need explicit OBSERVER role check
+  3. Election results PDF export (beyond CSV) — for official certification documents
+  4. Voter notifications (email/SMS) — when election opens, when vote is received
+  5. Dark/light theme default based on system preference (currently forced dark)
+  6. Election results comparison view (cross-election analytics)
