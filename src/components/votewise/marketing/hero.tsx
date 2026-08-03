@@ -50,8 +50,8 @@ export function Hero() {
       <FlyingHeadshots />
       <div className="votewise-grid-bg absolute inset-0 opacity-15" aria-hidden />
 
-      <div className="vw-section relative py-12 md:py-20 lg:py-28">
-        <div className="grid gap-8 sm:gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-16 items-center">
+      <div className="vw-section relative py-12 md:min-h-[calc(100vh-4rem)] md:flex md:items-center md:py-16 lg:py-20">
+        <div className="grid gap-8 sm:gap-10 lg:grid-cols-[1.05fr_1fr] lg:gap-16 items-center w-full">
           {/* Left: copy */}
           <div className="flex flex-col gap-6 vw-fade-up">
             <div className="inline-flex w-fit items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1.5 text-xs">
