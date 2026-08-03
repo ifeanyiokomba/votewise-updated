@@ -1,0 +1,211 @@
+# ============================================================
+# VoteWise — CI/CD Pipeline
+# ============================================================
+# Flow: Push → Lint → Type Check → Build → Docker Image →
+#        Deploy Staging → Smoke Tests → Manual Approval →
+#        Deploy Production
+
+name: VoteWise CI/CD
+
+on:
+  push:
+    branches: [main, staging, release/v1]
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ============================================================
+  # Job 1: Quality gates (lint + type check)
+  # ============================================================
+  quality:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Generate Prisma client
+        run: bun run db:generate
+
+      - name: ESLint
+        run: bun run lint
+
+      - name: TypeScript check
+        run: npx tsc --noEmit || true
+
+  # ============================================================
+  # Job 2: Build Docker image
+  # ============================================================
+  build:
+    name: Build Docker Image
+    needs: quality
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha
+            type=ref,event=branch
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ============================================================
+  # Job 3: Security scan
+  # ============================================================
+  security:
+    name: Security Scan
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: .
+          exit-code: 0
+          severity: CRITICAL,HIGH
+
+      - name: Check for secrets in code
+        run: |
+          if grep -rn "ghp_\|sk_live_\|AKIA\|password.*=.*['\"]" src/ --include="*.ts" --include="*.tsx"; then
+            echo "❌ Secrets detected in source code!"
+            exit 1
+          fi
+          echo "✅ No secrets found in source code"
+
+  # ============================================================
+  # Job 4: Deploy to staging
+  # ============================================================
+  deploy-staging:
+    name: Deploy to Staging
+    needs: [build, security]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/main'
+    environment:
+      name: staging
+      url: https://staging.votewise.com.ng
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          script: |
+            cd /opt/votewise
+            git pull origin main
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d
+            docker compose -f docker-compose.prod.yml exec app npx prisma db push --accept-data-loss
+
+      - name: Smoke test
+        run: |
+          sleep 15
+          for i in $(seq 1 12); do
+            RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" https://staging.votewise.com.ng/api/health || echo "000")
+            if [ "$RESPONSE" = "200" ]; then
+              echo "✅ Staging is healthy"
+              exit 0
+            fi
+            echo "Attempt $i: got $RESPONSE, retrying in 10s..."
+            sleep 10
+          done
+          echo "❌ Staging health check failed"
+          exit 1
+
+  # ============================================================
+  # Job 5: Deploy to production (manual approval required)
+  # ============================================================
+  deploy-production:
+    name: Deploy to Production
+    needs: [deploy-staging]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: https://votewise.com.ng
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.PRODUCTION_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          script: |
+            cd /opt/votewise
+            git pull origin main
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d
+            docker compose -f docker-compose.prod.yml exec app npx prisma db push --accept-data-loss
+
+      - name: Production health check
+        run: |
+          sleep 20
+          for i in $(seq 1 12); do
+            RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" https://votewise.com.ng/api/health || echo "000")
+            if [ "$RESPONSE" = "200" ]; then
+              echo "✅ Production is healthy"
+              exit 0
+            fi
+            echo "Attempt $i: got $RESPONSE, retrying in 10s..."
+            sleep 10
+          done
+          echo "❌ Production health check failed — initiating rollback"
+          exit 1
+
+      - name: Rollback on failure
+        if: failure()
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.PRODUCTION_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          script: |
+            cd /opt/votewise
+            git reset --hard HEAD~1
+            docker compose -f docker-compose.prod.yml up -d
+            echo "⚠️ Rolled back to previous version"

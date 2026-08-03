@@ -1,0 +1,174 @@
+# ============================================================
+# VoteWise — Production Caddyfile
+# Domain: votewise.com.ng + wildcard subdomains
+# ============================================================
+
+{
+	# Global options
+	email admin@votewise.com.ng
+	# staging {
+	# 	ca https://acme-staging-v02.api.letsencrypt.org/directory
+	# }
+}
+
+# ============================================================
+# Main domain + www
+# ============================================================
+votewise.com.ng, www.votewise.com.ng {
+	# Security headers
+	header {
+		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=()"
+		# CSP — tighten for production
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' wss: https:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+	}
+
+	# Rate limiting
+	rate_limit {
+		zone dynamic {
+			key {remote_host}
+			events 50
+			window 1s
+		}
+	}
+
+	# WAF — block common attack paths
+	@wp path /wp-admin* /wp-login* /.env /.git/* /xmlrpc.php /phpinfo.php /admin.php
+	respond @wp 403
+
+	# Proxy to Next.js app
+	reverse_proxy app:3000 {
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+		# Health checks
+		health_uri /api/health
+		health_interval 30s
+		health_timeout 5s
+		# Zero-downtime
+		lb_try_duration 10s
+		lb_try_interval 250ms
+	}
+
+	# Gzip compression
+	encode gzip zstd
+
+	# Cache static assets
+	@static path /_next/static/* /public/*
+	header @static Cache-Control "public, max-age=31536000, immutable"
+
+	log {
+		output file /data/access.log
+		format json
+	}
+}
+
+# ============================================================
+# Admin subdomain (stricter rate limit)
+# ============================================================
+admin.votewise.com.ng {
+	header {
+		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+	}
+
+	rate_limit {
+		zone admin {
+			key {remote_host}
+			events 10
+			window 1s
+		}
+	}
+
+	reverse_proxy app:3000
+	encode gzip zstd
+
+	log {
+		output file /data/admin-access.log
+		format json
+	}
+}
+
+# ============================================================
+# API subdomain
+# ============================================================
+api.votewise.com.ng {
+	header {
+		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		Access-Control-Allow-Origin "https://votewise.com.ng"
+		Access-Control-Allow-Methods "GET, POST, PATCH, DELETE, OPTIONS"
+		Access-Control-Allow-Headers "Content-Type, Authorization, x-voter-token"
+	}
+
+	rate_limit {
+		zone api {
+			key {remote_host}
+			events 100
+			window 1s
+		}
+	}
+
+	reverse_proxy app:3000
+	encode gzip zstd
+}
+
+# ============================================================
+# WebSocket (results-service)
+# ============================================================
+ws.votewise.com.ng {
+	reverse_proxy results-service:3030
+}
+
+# ============================================================
+# Wildcard — organization subdomains
+# e.g. achema.votewise.com.ng, coopline.votewise.com.ng
+# ============================================================
+*.votewise.com.ng {
+	header {
+		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+
+	# Block admin paths on org subdomains
+	@admin path /admin* /api/admin*
+	respond @admin 403
+
+	# Route socket.io to results-service
+	@socket query XTransformPort=3030
+	reverse_proxy @socket results-service:3030
+
+	# Everything else to the app
+	reverse_proxy app:3000 {
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+	}
+
+	encode gzip zstd
+
+	log {
+		output file /data/org-access.log
+		format json
+	}
+}
+
+# ============================================================
+# Status page subdomain (optional — can point to uptime service)
+# ============================================================
+status.votewise.com.ng {
+	reverse_proxy app:3000
+}
+
+# ============================================================
+# Docs subdomain (optional)
+# ============================================================
+docs.votewise.com.ng {
+	reverse_proxy app:3000
+}

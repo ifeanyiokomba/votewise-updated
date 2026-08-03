@@ -1,0 +1,17 @@
+node_modules
+.next
+.git
+.env*
+.env.local
+db/*.db
+db/*.db-journal
+dev.log
+server.log
+screenshot-*.png
+upload/
+download/
+tool-results/
+tests/
+docs/
+*.md
+!README.md
