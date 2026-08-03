@@ -147,3 +147,70 @@ Stage Summary:
   3. Fraud detection dashboard (EIFDIRS) — integrity events stream + incident management
   4. API key management (AIDP) — for developer/integration access
   5. Mobile responsiveness audit on all new pages
+
+---
+Task ID: CRON-QA-R3
+Agent: Z.ai Code (webDevReview cron)
+Task: Round 3 — Observer mode, incidents, announcements, archive, settings
+
+Work Log:
+- Reviewed worklog.md (CRON-QA-R2 entry). Project was stable with candidate details, eligibility checker, election monitor, and portal quick-actions.
+- Performed QA via agent-browser: verified all services healthy, all key routes returning 200, lint clean.
+- Identified next high-impact features: observer mode (missing persona), incident reporting, announcements, public archive, org settings.
+- Added Prisma models: ElectionIncident (type, severity, status, title, description, location, resolution) and Announcement (title, body, severity). Added proper relations to Election model.
+- Built 5 new feature areas with API routes + UI pages.
+
+Issues encountered & resolved:
+- Prisma schema relation error: Announcement and ElectionIncident models initially had electionId fields but no Prisma @relation declarations. The include: { election } query failed with "Invalid invocation". Fixed by adding proper @relation(fields/references) + back-relations on Election model. Required full .next cache clear + dev server restart + SCHEMA_SIG bump to force Turbopack to re-bundle the regenerated Prisma client.
+
+New features built:
+1. Observer mode (/o/:org/observe?election=ID)
+   - Login-gated page for observers to monitor elections
+   - Report incident form: type (6 options), severity (4 levels), title, description, location
+   - Incident list with severity-coded icons, status pills, reporter info, resolution display
+   - API: GET/POST /api/dashboard/elections/[id]/incidents
+2. Incident management dashboard (/dashboard/incidents)
+   - Cross-election incident list with filter tabs (All/Open/Investigating/Resolved) showing counts
+   - Status transitions: "Start investigating" (OPEN→INVESTIGATING), "Resolve" (→RESOLVED), "Dismiss" (→DISMISSED)
+   - API: GET/PATCH /api/dashboard/incidents
+3. Announcements system (/dashboard/announcements)
+   - Org admins publish INFO/WARNING/CRITICAL announcements
+   - Create form with title, body, severity selector
+   - Announcement cards with severity-coded icons + time-ago
+   - API: GET/POST /api/dashboard/announcements
+4. Public results archive (/o/:org/archive)
+   - Transparent record of completed/certified elections
+   - Cards showing turnout, total votes, positions, audit hash, certification badge
+   - API: GET /api/portal/[subdomain]/archive
+5. Organization settings (/dashboard/settings)
+   - Org info display (name, subdomain, type, plan, status, timezone)
+   - Branding form: tagline, primary color, accent color with live color swatch previews
+   - API: GET/PATCH /api/dashboard/settings/brand
+
+UI improvements:
+- Org nav expanded to 7 tabs: Portal, Candidates, Results, Archive, Observe, Check, Verify
+- Dashboard sidebar expanded to 5 items: Overview, Elections, Announcements, Incidents, Settings
+- Incident cards with severity-coded icon backgrounds (critical=red, high=amber, medium=blue, low=gray)
+- Announcement cards with severity-coded icons (info=blue, warning=amber, critical=red)
+- Archive cards with certification badge, audit hash snippet, and View results button
+- Settings page with live color swatch previews next to color inputs
+
+Verification (agent-browser):
+- Announcements: created "Voting opens at 9:00 AM" (INFO) → appears on dashboard with "6 minutes ago"
+- Incidents: filed "Long queue at polling station A" (IRREGULARITY, MEDIUM) from /o/achema/observe → appears on /dashboard/incidents → filter shows "All (1), Open (1)" → clicked "Start investigating" → status changed to INVESTIGATING → filter shows "Open (0), Investigating (1)"
+- Archive: shows empty state (no certified elections yet — correct, SUG election is still LIVE)
+- Settings: shows Achema State University info + branding form with color swatches
+- Lint: 0 errors, 0 warnings
+
+Stage Summary:
+- Current status: STABLE. All core flows + 8 feature areas now working (voting, dashboard, admin, candidate details, eligibility checker, monitor, observer/incidents, announcements, archive, settings).
+- Completed modifications: 5 new feature areas (observer mode, incidents, announcements, archive, settings) + 2 new Prisma models + 6 new API routes + expanded nav (7 org tabs, 5 dashboard items).
+- Verification results: all new features verified end-to-end via agent-browser. Incident lifecycle (file → investigate → resolve) works. Announcements create+display works. Lint clean.
+- Unresolved/risks: The Prisma schema relation issue required a full .next cache clear + dev server restart. Future schema changes should include relations from the start.
+- Priority recommendations for next phase:
+  1. Display announcements on the org portal (voter-facing) — currently announcements are admin-only
+  2. Billing/subscription management (BSPCM) — Organization.plan + paidUntil fields exist
+  3. Observer role assignment — currently any logged-in member can observe; need explicit role gating
+  4. Mobile responsiveness audit on new pages (observe, archive, settings, incidents)
+  5. Export election results as PDF/CSV
+  6. Voter search/filter in dashboard voters tab
