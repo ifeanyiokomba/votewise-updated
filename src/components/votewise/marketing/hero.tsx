@@ -12,6 +12,16 @@ const PIPELINE = [
   { label: "Receipt issued", icon: CheckCircle2, color: "text-success" },
 ];
 
+/** Deterministic 8-char hex from a label — stable across SSR and client. */
+function hashLabel(label: string): string {
+  let h = 2166136261;
+  for (let i = 0; i < label.length; i++) {
+    h ^= label.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0).toString(16).padStart(8, "0").slice(0, 8);
+}
+
 function Lock(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -102,7 +112,7 @@ export function Hero() {
                       <div className="flex-1">
                         <div className="text-sm font-medium">{p.label}</div>
                         <div className="vw-mono text-xs text-muted-foreground">
-                          {active ? "0x" + Math.random().toString(16).slice(2, 10) : "pending"}
+                          {active ? "0x" + hashLabel(p.label) : "pending"}
                         </div>
                       </div>
                       {active && idx === step && (
