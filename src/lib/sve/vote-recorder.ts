@@ -16,6 +16,7 @@ import { Prisma } from "@prisma/client";
 export interface CastInput {
   ballotId: string;
   selections: Array<{ positionId: string; candidateId: string }>;
+  ipAddress?: string | null;
 }
 
 export interface CastResult {
@@ -147,7 +148,7 @@ export async function castVote(voter: Voter, input: CastInput): Promise<CastResu
               receiptCode,
               idempotencyKey: ik,
               isSimulation: ballot.isSimulation,
-              ipAddress: null,
+              ipAddress: input.ipAddress ?? null,
               deviceFingerprint: v.sessionDeviceId,
             },
           });

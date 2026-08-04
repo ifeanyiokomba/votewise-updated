@@ -1,0 +1,2438 @@
+# VOTEWISE COMPREHENSIVE PRODUCTION-READINESS AUDIT, CORRECTION, AND IMPLEMENTATION DIRECTIVE
+
+## 1. ROLE AND OPERATING MANDATE
+
+Act as a combined:
+
+* Principal software architect
+* Senior full-stack engineer
+* Election systems engineer
+* Application security engineer
+* PostgreSQL and Supabase specialist
+* DevOps and site-reliability engineer
+* Quality-assurance lead
+* Accessibility specialist
+* Privacy and compliance reviewer
+* Product and user-experience auditor
+
+Your responsibility is to conduct a complete, evidence-based audit of the VoteWise codebase and transform it into a secure, reliable, scalable, maintainable, accessible, and production-ready digital election platform.
+
+VoteWise must be treated as high-integrity election infrastructure. A defect that would be minor in an ordinary web application may be critical in VoteWise if it can:
+
+* Prevent an eligible voter from voting
+* Allow an ineligible voter to vote
+* Permit duplicate voting
+* Expose voter identity or voting choices
+* Modify election configuration without authorization
+* Produce incorrect or inconsistent results
+* Allow premature access to election results
+* Make election activity impossible to audit
+* Cause downtime during an active election
+* Allow administrators to manipulate records without detection
+* Destroy evidence required for dispute resolution
+
+Do not perform superficial improvements. Audit the complete repository, identify root causes, implement verified corrections, and document every material decision.
+
+Do not redesign or replace working architecture without a justified technical reason. Preserve VoteWise’s intended product identity, workflows, visual direction, and business logic while improving their implementation.
+
+---
+
+# 2. NON-NEGOTIABLE WORKING RULES
+
+## 2.1 Inspect before editing
+
+Before changing code:
+
+1. Read the complete repository structure.
+2. Identify the application framework and versions.
+3. Inspect all configuration files.
+4. Inspect environment-variable usage.
+5. Inspect the database schema and migrations.
+6. Inspect authentication and authorization flows.
+7. Inspect public, voter, election-official, and administrator interfaces.
+8. Inspect every API route, server action, edge function, webhook, background task, and database function.
+9. Inspect tests, deployment configuration, scripts, documentation, and CI workflows.
+10. Build a dependency and data-flow map.
+
+Do not assume a feature works because a page exists.
+
+## 2.2 Never hide uncertainty
+
+When behaviour cannot be verified:
+
+* Mark it as “Unverified.”
+* Explain why it could not be verified.
+* State the evidence required.
+* Do not declare it production-ready.
+
+## 2.3 No destructive implementation
+
+Do not:
+
+* Delete working features merely to simplify the audit.
+* Replace the complete codebase with a new starter template.
+* weaken authentication or authorization for convenience.
+* Disable TypeScript, linting, tests, security checks, or database constraints.
+* use mock data in production paths.
+* hard-code secrets, user IDs, election IDs, roles, dates, or results.
+* bypass Row-Level Security using privileged keys in client-side code.
+* expose internal errors, SQL errors, stack traces, tokens, or infrastructure details.
+* alter historical votes or audit events.
+* silently change election rules.
+
+## 2.4 Evidence is required
+
+Every audit finding must include:
+
+* Finding ID
+* Title
+* Severity
+* Category
+* Affected files
+* Affected feature
+* Evidence
+* Reproduction method
+* Root cause
+* Risk and impact
+* Recommended correction
+* Implementation status
+* Verification evidence
+* Regression-test reference
+
+---
+
+# 3. REQUIRED INITIAL DELIVERABLES
+
+Before implementing major changes, produce the following.
+
+## 3.1 Repository map
+
+Document:
+
+* Framework and runtime
+* Frontend architecture
+* Backend architecture
+* API architecture
+* Authentication provider
+* Database platform
+* Storage services
+* Email, SMS, WhatsApp, or OTP providers
+* Observability services
+* Hosting and deployment architecture
+* Important scripts
+* Environment-variable groups
+* External integrations
+* Admin application structure
+* Documentation application structure
+* Status-page structure
+* Domain and subdomain responsibilities
+
+Expected VoteWise domains may include:
+
+* `votewise.com.ng`
+* `www.votewise.com.ng`
+* `admin.votewise.com.ng`
+* `api.votewise.com.ng`
+* `docs.votewise.com.ng`
+* `status.votewise.com.ng`
+
+Confirm the actual implementation instead of assuming these are already correctly configured.
+
+## 3.2 Feature inventory
+
+Classify every feature as:
+
+* Complete and verified
+* Complete but untested
+* Partially implemented
+* UI-only
+* Backend-only
+* Broken
+* Missing
+* Deprecated
+* Security-sensitive
+* Blocked by external configuration
+
+## 3.3 Role and permission matrix
+
+Create a formal matrix for all supported roles, such as:
+
+* Public visitor
+* Prospective voter
+* Verified voter
+* Election observer
+* Candidate
+* Election official
+* Election manager
+* Support agent
+* Auditor
+* Super administrator
+* Platform operator
+
+For each role, specify permission to:
+
+* View an election
+* Register or import voters
+* Verify voter eligibility
+* View the voter register
+* Create or edit elections
+* Create positions
+* Create or edit candidates
+* Publish an election
+* Open voting
+* Pause or resume voting
+* Close voting
+* Cast a ballot
+* View turnout
+* View live results
+* Publish final results
+* Export results
+* View audit records
+* Manage administrators
+* Change security settings
+* Access support data
+* Delete or archive records
+
+Apply deny-by-default authorization.
+
+## 3.4 Election state machine
+
+Define and enforce valid election states, for example:
+
+* Draft
+* Configuration review
+* Scheduled
+* Registration open
+* Registration closed
+* Voting scheduled
+* Voting open
+* Voting paused
+* Voting closed
+* Counting
+* Results under review
+* Results certified
+* Results published
+* Archived
+* Cancelled
+
+Document valid transitions.
+
+Examples:
+
+* A draft election may become scheduled only after validation.
+* A closed election must not return to voting-open without a formally authorized emergency procedure.
+* Published certified results must not be silently edited.
+* Candidates must not be modified after voting starts unless an emergency process is explicitly designed, authorized, and audited.
+
+Enforce transitions on the server and database level where practical. Never rely only on disabled interface buttons.
+
+## 3.5 Threat model
+
+Create a VoteWise-specific threat model covering at least:
+
+* Credential stuffing
+* Brute-force authentication
+* OTP interception or replay
+* Session theft
+* Administrator account takeover
+* Privilege escalation
+* IDOR and broken object authorization
+* Duplicate voting
+* Ballot stuffing
+* Vote modification
+* Voter impersonation
+* Unauthorized voter import
+* Malicious election configuration
+* Candidate substitution
+* Premature result disclosure
+* Database tampering
+* Insider abuse
+* Audit-log deletion
+* SQL injection
+* Cross-site scripting
+* Cross-site request forgery
+* Server-side request forgery
+* Malicious file upload
+* API scraping
+* denial-of-service attacks
+* bot traffic
+* race conditions
+* webhook forgery
+* secret leakage
+* supply-chain compromise
+* dependency compromise
+* CI/CD compromise
+* backup compromise
+* DNS or domain takeover
+* social-engineering attacks
+* election-day traffic spikes
+
+For each threat, specify:
+
+* Asset at risk
+* Threat actor
+* Entry point
+* Preconditions
+* Existing controls
+* Missing controls
+* Likelihood
+* Impact
+* Risk rating
+* Required mitigation
+* Residual risk
+
+---
+
+# 4. SEVERITY CLASSIFICATION
+
+Use the following severity scale.
+
+## Critical
+
+A defect that could:
+
+* Change votes or results
+* permit duplicate voting
+* expose ballot secrecy
+* grant unauthorized administrative control
+* bypass authentication
+* expose production secrets
+* cause complete election failure
+* permanently destroy election records
+* allow privileged database access from a client
+* allow arbitrary code or SQL execution
+
+Critical findings block deployment.
+
+## High
+
+A defect that could:
+
+* Expose personal voter information
+* permit privilege escalation
+* allow unauthorized election changes
+* cause major election-day downtime
+* break voter verification at scale
+* expose results before authorization
+* make election events unauditable
+
+High findings block deployment unless an explicit, documented exception is approved.
+
+## Medium
+
+A defect causing:
+
+* Limited information exposure
+* unreliable workflows
+* inconsistent validation
+* accessibility barriers
+* degraded performance
+* incomplete monitoring
+* operational difficulty
+
+## Low
+
+A defect causing:
+
+* Minor usability problems
+* maintainability problems
+* cosmetic inconsistency
+* non-critical documentation gaps
+
+## Informational
+
+An improvement opportunity that does not currently represent a demonstrated vulnerability or failure.
+
+---
+
+# 5. ARCHITECTURE AUDIT
+
+## 5.1 System boundaries
+
+Determine and document:
+
+* What runs in the browser
+* What runs on the server
+* What runs in Supabase
+* What runs in edge or serverless functions
+* What uses privileged credentials
+* What communicates with third-party providers
+* Where validation occurs
+* Where authorization occurs
+* Where election rules are enforced
+* Where results are calculated
+* Where immutable evidence is stored
+
+Ensure privileged operations cannot be executed directly from an untrusted client.
+
+## 5.2 Layer separation
+
+The system should have explicit separation between:
+
+* Presentation
+* Client state
+* Domain logic
+* Server/API logic
+* Authorization
+* Data access
+* Database persistence
+* Integrations
+* Logging and observability
+* Infrastructure configuration
+
+Prevent UI components from containing unrestricted database or privileged business logic.
+
+## 5.3 Domain-driven boundaries
+
+At minimum, separate the following domains:
+
+* Identity and authentication
+* Organizations and institutions
+* Voter registry
+* Elections
+* Positions or contests
+* Candidates
+* Ballots
+* Voting eligibility
+* Vote casting
+* Result aggregation
+* Result certification
+* Notifications
+* Administration
+* Audit and compliance
+* Support
+* Reporting
+* Observability
+
+## 5.4 Scalability analysis
+
+Model election-day load using realistic scenarios:
+
+* 5,000 registered voters
+* 20% attempting access within five minutes
+* 50% voting within one hour
+* Multiple active elections
+* Repeated login and OTP attempts
+* Public turnout-page traffic
+* Admin monitoring traffic
+* Automated polling or refresh traffic
+
+Identify bottlenecks involving:
+
+* Database connection limits
+* serverless concurrency
+* repeated count queries
+* real-time subscriptions
+* OTP-provider limits
+* email-provider rate limits
+* image delivery
+* unbounded API queries
+* N+1 database queries
+* full-table scans
+* missing indexes
+* synchronous logging
+* synchronous result computation
+* inefficient client polling
+
+---
+
+# 6. DATABASE AND SUPABASE AUDIT
+
+## 6.1 Schema integrity
+
+Inspect every table, column, relationship, enum, view, trigger, function, index, and migration.
+
+Verify:
+
+* Primary keys exist.
+* Foreign keys exist where relationships require them.
+* Foreign-key deletion behaviour is intentional.
+* Required fields use `NOT NULL`.
+* Enumerated values are constrained.
+* Date ranges are valid.
+* Election start time precedes end time.
+* Position and candidate relationships are valid.
+* Votes cannot reference unrelated elections or contests.
+* Organization ownership is enforced.
+* Normalized identifiers are consistently stored.
+* Unique constraints enforce business rules.
+* Database timestamps use a consistent timezone.
+* Currency fields, where any exist, avoid floating-point storage.
+* Soft deletion is used only where justified.
+* Historical evidence cannot be accidentally cascade-deleted.
+
+## 6.2 Row-Level Security
+
+Enable Row-Level Security on every table exposed through Supabase APIs.
+
+Audit all policies for:
+
+* Anonymous read
+* Authenticated read
+* Owner read
+* Voter access
+* Admin access
+* Election-manager access
+* Organization isolation
+* Insert permission
+* Update permission
+* Delete permission
+* Storage access
+
+Test policies using:
+
+* Anonymous users
+* Normal voters
+* Voters from another organization
+* Election officials
+* Organization administrators
+* Super administrators
+* Suspended users
+* Expired sessions
+
+A user must not gain access by changing:
+
+* URL identifiers
+* request-body identifiers
+* organization IDs
+* election IDs
+* voter IDs
+* candidate IDs
+* role values
+* JWT metadata
+* client-side state
+
+## 6.3 Privileged keys
+
+Verify that:
+
+* Supabase service-role keys never appear in frontend bundles.
+* Privileged keys are never prefixed as public environment variables.
+* Service-role operations run only in trusted server environments.
+* Service-role usage is minimal and documented.
+* Every privileged operation performs its own authorization checks.
+* Keys can be rotated without code changes.
+* leaked or obsolete keys have been revoked.
+
+## 6.4 Migration discipline
+
+Require:
+
+* Version-controlled migrations
+* Reproducible schema setup
+* No undocumented production-only schema changes
+* Forward migration strategy
+* Rollback or repair strategy
+* Seed data separated from production data
+* Migration testing against realistic datasets
+* Safe handling of destructive changes
+* Backup before high-risk migrations
+* Transactional migration where supported
+
+## 6.5 Indexing and query performance
+
+Inspect execution plans for frequently used queries.
+
+Index as appropriate:
+
+* Election status and dates
+* Organization membership
+* Voter identifiers
+* User-to-voter mappings
+* Election eligibility
+* Candidate-to-position relationships
+* Vote uniqueness fields
+* Audit timestamps
+* Notification status
+* Idempotency keys
+* Public result queries
+
+Do not add indexes blindly. Measure write and storage costs.
+
+## 6.6 Backups and restoration
+
+Implement and verify:
+
+* Automated production backups
+* Off-platform backup where required
+* Defined retention
+* Restore testing
+* Point-in-time recovery when justified
+* Backup encryption
+* Restricted backup access
+* Recovery documentation
+* Recovery time objective
+* Recovery point objective
+
+A backup is not considered valid until a restoration test succeeds.
+
+---
+
+# 7. AUTHENTICATION AND IDENTITY AUDIT
+
+## 7.1 Account security
+
+Verify:
+
+* Secure signup
+* Email or phone verification
+* Password-reset security
+* Generic error messages that do not expose account existence
+* Strong session handling
+* Token expiry
+* Refresh-token handling
+* Session revocation
+* Logout from all devices
+* Account suspension
+* Administrator MFA
+* Reauthentication for sensitive actions
+
+## 7.2 Voter identity versus user account
+
+Do not assume an authenticated user is automatically an eligible voter.
+
+Separate:
+
+* Account authentication
+* Identity verification
+* Organization membership
+* Voter eligibility
+* Election eligibility
+* Ballot issuance
+* Vote submission
+
+An authenticated user must receive a ballot only after all relevant eligibility checks pass.
+
+## 7.3 OTP controls
+
+Where OTP is used:
+
+* Generate with a cryptographically secure source.
+* Use short expiry.
+* Permit one-time use only.
+* Store a hash instead of plaintext where practical.
+* Bind OTP to its purpose and account.
+* Rate-limit generation.
+* Rate-limit verification.
+* Limit failed attempts.
+* Prevent replay.
+* Invalidate older OTPs when a new one is generated.
+* Avoid exposing the full destination address or number.
+* Log security-relevant events without logging the OTP.
+* Handle provider delays and duplicate delivery.
+* Prevent account enumeration.
+* Provide secure recovery procedures.
+
+## 7.4 Administrator authentication
+
+Require stronger controls for administrators:
+
+* MFA
+* short privileged-session lifetime
+* step-up authentication for destructive actions
+* no shared accounts
+* device/session visibility
+* session revocation
+* login alerts
+* rate limiting
+* optional IP restrictions where operationally suitable
+* auditable impersonation, if impersonation is supported
+* break-glass account procedure
+
+---
+
+# 8. AUTHORIZATION AUDIT
+
+Authentication answers “Who is the user?” Authorization answers “What may this user do?”
+
+Every protected operation must enforce authorization on the server.
+
+Test:
+
+* Horizontal privilege escalation
+* Vertical privilege escalation
+* Cross-organization access
+* Cross-election access
+* Access using guessed UUIDs
+* Access using modified JSON payloads
+* Access through hidden or unlinked endpoints
+* Access after role removal
+* Access after account suspension
+* Access through stale sessions
+* Access through direct database APIs
+
+Never trust client-provided role, ownership, organization, eligibility, or election-state information.
+
+Create centralized authorization helpers or policy modules. Avoid inconsistent inline role checks scattered throughout the codebase.
+
+---
+
+# 9. VOTER REGISTRY AUDIT
+
+## 9.1 Registry import
+
+For CSV or spreadsheet import:
+
+* Validate file type and size.
+* Parse safely.
+* Validate required columns.
+* Normalize identifiers.
+* detect duplicate rows.
+* Detect conflicts with existing voters.
+* Display a validation preview.
+* Require explicit confirmation.
+* Process large imports safely.
+* Record who imported the file.
+* Record import time and source.
+* Produce success and error reports.
+* Prevent formulas or spreadsheet injection in exported files.
+* Prevent one organization from importing into another.
+* Avoid partial corruption if processing fails.
+
+## 9.2 Voter uniqueness
+
+Define the authoritative voter identifier, such as:
+
+* Student registration number
+* Employee number
+* Organization membership number
+* Verified email address
+* Verified phone number
+* Composite institutional identifier
+
+Normalize identifiers before uniqueness checks.
+
+Examples:
+
+* Trim whitespace.
+* Apply consistent casing.
+* Normalize phone-number format.
+* Reject visually ambiguous or malformed IDs.
+* Avoid treating plus-addressed emails as identical unless the organization explicitly requires it.
+
+## 9.3 Eligibility
+
+Eligibility must be deterministically calculated and auditable.
+
+Potential eligibility factors:
+
+* Organization
+* Department
+* Faculty
+* Class or level
+* Membership status
+* Account verification
+* Voter-register status
+* Election assignment
+* Suspension status
+* Previous vote status
+* Election dates
+* Special voter category
+
+Store eligibility evidence or a reproducible eligibility decision. Do not rely only on transient frontend logic.
+
+---
+
+# 10. ELECTION CONFIGURATION AUDIT
+
+Verify that an administrator can safely configure:
+
+* Election title and description
+* Organization
+* Timezone
+* Start and end time
+* Registration period
+* Candidate publication
+* Positions or contests
+* Number of selections allowed
+* Candidate eligibility
+* Voter eligibility groups
+* Result-visibility policy
+* Turnout visibility
+* Ballot instructions
+* Branding
+* Support contacts
+* Terms and privacy information
+
+Validate:
+
+* At least one contest exists.
+* Every contest has valid candidates where candidates are required.
+* Candidate duplication is prevented.
+* Candidate ordering is deterministic or intentionally randomized.
+* Maximum selections are valid.
+* Zero-selection and abstention behaviour is defined.
+* Election dates are valid.
+* Election timezone is explicit.
+* Results cannot accidentally publish at voting start.
+* Test elections are visibly separated from real elections.
+
+Add a pre-publication readiness check that blocks publication until all critical requirements pass.
+
+---
+
+# 11. BALLOT AND VOTING-INTEGRITY AUDIT
+
+## 11.1 Ballot correctness
+
+Verify that each voter receives only the contests for which they are eligible.
+
+The ballot must:
+
+* Clearly show election identity.
+* clearly show each position.
+* clearly show candidate names and information.
+* indicate selection limits.
+* prevent invalid over-selection.
+* permit intentional abstention if supported.
+* show a review page before final submission.
+* require clear final confirmation.
+* prevent accidental duplicate submission.
+* communicate successful submission without revealing sensitive internal data.
+
+## 11.2 Exactly-once voting
+
+The vote-casting operation must be atomic and idempotent.
+
+The system must protect against:
+
+* Double-click submission
+* Browser refresh
+* Network retries
+* Multiple tabs
+* Concurrent requests
+* Client replay
+* API replay
+* Race conditions
+* Delayed duplicate requests
+* Serverless retry behaviour
+
+Use database-backed uniqueness and a transaction or equivalent atomic function.
+
+Never depend only on a frontend `hasVoted` flag.
+
+The operation should conceptually:
+
+1. Authenticate the user.
+2. Confirm election availability.
+3. Confirm voter eligibility.
+4. Lock or safely evaluate the voter’s voting state.
+5. Validate the submitted ballot.
+6. Reject duplicate submissions.
+7. Store ballot records.
+8. Mark ballot issuance or participation as consumed.
+9. Create the necessary audit evidence.
+10. Commit all changes together.
+11. Return a safe receipt.
+
+No partial vote should remain if any step fails.
+
+## 11.3 Idempotency
+
+Implement an idempotency key or equivalent mechanism for vote submission.
+
+Requirements:
+
+* Bind the key to the authenticated voter and election.
+* Reject altered payload reuse.
+* Safely return the original successful outcome for legitimate retries.
+* Expire or archive keys according to policy.
+* Never use a predictable key as the only security control.
+
+## 11.4 Ballot secrecy
+
+Determine the required election model.
+
+At minimum, avoid exposing a direct voter-to-choice mapping to ordinary administrators.
+
+Consider separating:
+
+* Participation record: confirms that the voter voted.
+* Ballot record: contains the selections.
+* Receipt: proves submission without revealing the vote.
+
+Do not claim cryptographic anonymity or end-to-end verifiability unless it has actually been designed, implemented, and independently reviewed.
+
+Do not expose individual selections in:
+
+* Admin screens
+* logs
+* analytics
+* browser storage
+* error reports
+* notification content
+* support interfaces
+
+## 11.5 Vote immutability
+
+After successful submission:
+
+* Ordinary users cannot edit or delete votes.
+* Administrators cannot silently edit votes.
+* Database permissions prevent unauthorized modification.
+* Any exceptional correction process is formal, restricted, transparent, and audited.
+* Historical result snapshots remain verifiable.
+
+---
+
+# 12. RESULT CALCULATION AND PUBLICATION AUDIT
+
+## 12.1 Calculation correctness
+
+Create deterministic result-calculation logic.
+
+Verify:
+
+* Votes are counted only for the correct election and contest.
+* Invalid or incomplete records are handled according to documented rules.
+* Withdrawn or disqualified candidates are handled consistently.
+* Ties are represented correctly.
+* Abstentions are represented correctly.
+* Turnout denominator is explicitly defined.
+* Percentages use consistent rounding.
+* Total percentages do not mislead users because of rounding.
+* Recounts reproduce the same result from the same dataset.
+
+Avoid relying on browser-side counting.
+
+## 12.2 Result lifecycle
+
+Separate:
+
+* Internal provisional count
+* Election-official review
+* Certified result
+* Public result
+
+Only authorized roles may advance the result state.
+
+## 12.3 Premature disclosure
+
+Prevent results from being accessed before the configured publication state through:
+
+* Public pages
+* API endpoints
+* GraphQL or Supabase APIs
+* real-time subscriptions
+* cached pages
+* search-engine metadata
+* static generation
+* preview links
+* downloadable reports
+* client bundles
+
+## 12.4 Result verification
+
+Provide internal reconciliation such as:
+
+* Total issued ballots
+* Total participating voters
+* Total submitted ballots
+* Total contest selections
+* Abstentions
+* Rejected or invalid submissions, where applicable
+* Candidate totals
+* Hash or snapshot identifier
+* Certification timestamp
+* Certifying official
+
+Create automated invariants. For example:
+
+* A voter cannot have more than one accepted ballot for an election.
+* Candidate totals cannot exceed total valid ballots for a single-choice contest.
+* Total ballots cannot exceed eligible voters.
+* Certified result snapshots cannot silently change.
+
+---
+
+# 13. ADMINISTRATOR PORTAL AUDIT
+
+## 13.1 Access control
+
+The admin application must not rely on an obscure subdomain as security.
+
+Require:
+
+* Authentication
+* explicit role authorization
+* MFA
+* secure sessions
+* route protection
+* server-side permission checks
+* audit logging
+* rate limiting
+* secure headers
+
+## 13.2 Dashboard accuracy
+
+Administrative metrics must be derived from trusted server-side data.
+
+Clearly distinguish:
+
+* Registered voters
+* Verified voters
+* Eligible voters
+* Ballots issued
+* Voters who participated
+* Completed ballots
+* Turnout percentage
+* Failed login attempts
+* OTP failures
+* Active sessions
+* System incidents
+
+Avoid ambiguous statistics.
+
+## 13.3 Dangerous actions
+
+For actions such as:
+
+* Opening voting early
+* Closing voting
+* Reopening voting
+* Deleting candidates
+* Removing voters
+* Publishing results
+* Revoking an administrator
+* Rotating credentials
+* Cancelling an election
+
+Require, depending on risk:
+
+* Clear warning
+* typed confirmation
+* reason
+* recent reauthentication
+* MFA challenge
+* two-person approval
+* immutable audit event
+
+## 13.4 Support access
+
+Support personnel should have the minimum required access.
+
+Mask:
+
+* Personal data
+* authentication details
+* sensitive identifiers
+* ballot information
+
+Support must never see a voter’s selections.
+
+---
+
+# 14. AUDIT-LOGGING AND FORENSICS
+
+Implement append-only, tamper-resistant audit logging for security-sensitive events.
+
+Record:
+
+* Actor ID
+* Actor role
+* Organization
+* Election
+* Action
+* Target type
+* Target ID
+* Timestamp
+* Request or correlation ID
+* Session ID where appropriate
+* Source IP in privacy-appropriate form
+* User agent where justified
+* Previous value
+* New value
+* Reason
+* Outcome
+* Failure reason
+* Integrity metadata where supported
+
+Audit events should include:
+
+* Login and logout
+* Failed login
+* MFA changes
+* Password reset
+* Role changes
+* Administrator creation or removal
+* Voter imports
+* Voter eligibility changes
+* Election creation and configuration changes
+* Candidate changes
+* Election publication
+* Voting opened, paused, resumed, or closed
+* Result certification and publication
+* Export generation
+* Secret or provider configuration changes
+* Backup and restoration operations
+* Exceptional database operations
+
+Never log:
+
+* Passwords
+* OTPs
+* refresh tokens
+* authorization headers
+* service-role keys
+* complete authentication tokens
+* individual ballot selections in general application logs
+* unnecessary sensitive personal data
+
+Provide searchable audit records, export controls, retention rules, and restricted access.
+
+---
+
+# 15. API AUDIT
+
+Inventory every endpoint and server action.
+
+For each endpoint, document:
+
+* Method
+* Route
+* Purpose
+* Authentication requirement
+* Permitted roles
+* Input schema
+* Output schema
+* Database operations
+* Side effects
+* Rate limit
+* Idempotency requirement
+* Audit requirement
+* Error responses
+* Test coverage
+
+Verify:
+
+* Schema validation occurs server-side.
+* Unknown fields are rejected or intentionally ignored.
+* Request-size limits exist.
+* Authorization is performed per resource.
+* Pagination has safe limits.
+* Sorting and filtering use allowlists.
+* Sensitive data is excluded from responses.
+* Error responses use a consistent format.
+* Internal errors are not exposed.
+* CORS uses an explicit allowlist.
+* Protected operations are not callable anonymously.
+* API versioning is planned where public integrations exist.
+* API documentation matches actual behaviour.
+
+---
+
+# 16. INPUT, OUTPUT, AND FILE SECURITY
+
+## 16.1 Input validation
+
+Validate all:
+
+* URL parameters
+* Query parameters
+* JSON bodies
+* Form submissions
+* Cookies
+* Headers
+* Uploaded files
+* CSV records
+* Webhook payloads
+* Environment variables
+* Database-returned untrusted content
+
+Use shared runtime schemas where possible.
+
+## 16.2 Output safety
+
+Prevent:
+
+* Stored cross-site scripting
+* Reflected cross-site scripting
+* unsafe HTML rendering
+* unescaped CSV formulas
+* open redirects
+* unsafe URL protocols
+* sensitive error leakage
+
+Avoid unsafe HTML insertion. Where rich text is required, sanitize it with a maintained allowlist-based sanitizer.
+
+## 16.3 Upload security
+
+For candidate photos and documents:
+
+* Restrict MIME types.
+* Verify content signatures where practical.
+* Restrict size.
+* Rename files safely.
+* Prevent path traversal.
+* Remove dangerous metadata where appropriate.
+* Store outside executable paths.
+* Use private buckets and signed URLs where privacy requires them.
+* Prevent cross-organization access.
+* Define retention and deletion behaviour.
+
+---
+
+# 17. WEB SECURITY AUDIT
+
+Audit against the current OWASP ASVS and relevant OWASP guidance.
+
+At minimum, verify protection against:
+
+* Broken access control
+* Injection
+* Cross-site scripting
+* Cross-site request forgery
+* Server-side request forgery
+* Insecure design
+* Security misconfiguration
+* Authentication failures
+* Software and data integrity failures
+* Logging and monitoring failures
+* Cryptographic failures
+* File-upload attacks
+* Mass assignment
+* IDOR
+* session fixation
+* replay attacks
+* clickjacking
+* cache poisoning
+* host-header attacks
+* subdomain takeover
+
+## 17.1 HTTP security headers
+
+Review and configure:
+
+* Content-Security-Policy
+* Strict-Transport-Security
+* X-Content-Type-Options
+* Referrer-Policy
+* Permissions-Policy
+* Frame restrictions using CSP
+* Secure cookie attributes
+* Cross-origin policies where applicable
+
+Test that security headers do not break required functionality.
+
+## 17.2 Cookies
+
+Authentication cookies should be:
+
+* Secure
+* HttpOnly where applicable
+* SameSite configured appropriately
+* scoped narrowly
+* short-lived where possible
+* rotated after authentication or privilege change
+
+## 17.3 Rate limiting
+
+Rate-limit at least:
+
+* Login
+* Signup
+* Password reset
+* OTP generation
+* OTP verification
+* Account recovery
+* Voter lookup
+* Vote submission
+* Public search
+* Contact or support forms
+* Admin actions
+* Export generation
+* Webhooks where appropriate
+
+Use account, IP, device, election, and route-aware controls as justified.
+
+Do not permanently block legitimate voters because they share a campus network or mobile-provider IP.
+
+## 17.4 Bot and abuse controls
+
+Implement proportionate controls:
+
+* Progressive delays
+* challenge mechanisms
+* anomaly detection
+* temporary lockouts
+* provider-level firewall rules
+* alerting
+* abuse dashboards
+* manual review
+
+---
+
+# 18. PRIVACY AND DATA PROTECTION
+
+Create a data inventory listing:
+
+* Data category
+* Purpose
+* Source
+* Legal or organizational basis
+* Storage location
+* Access roles
+* Retention
+* Deletion rule
+* Export rule
+* Encryption status
+* Third-party processors
+
+Apply data minimization.
+
+Do not collect information merely because it may be useful later.
+
+Review:
+
+* Privacy notice
+* Cookie usage
+* Consent where required
+* retention policy
+* account deletion
+* legal holds
+* election record retention
+* data-subject access process
+* correction process
+* breach-response process
+* cross-border processing
+* vendor agreements
+
+Election evidence and personal account data may require different retention policies.
+
+---
+
+# 19. FRONTEND AND UX AUDIT
+
+## 19.1 Complete-state coverage
+
+Every page and component must handle:
+
+* Initial state
+* Loading
+* Success
+* Empty state
+* Validation error
+* Authorization failure
+* Network failure
+* Server failure
+* Rate-limit response
+* Session expiry
+* Offline or unstable network
+* Retry
+* Disabled state
+* Election unavailable
+* Election not started
+* Election closed
+* Already voted
+* Ineligible voter
+
+Do not use blank screens or indefinite spinners.
+
+## 19.2 Voting experience
+
+The voter journey should be:
+
+1. Open VoteWise.
+2. Identify the correct election.
+3. Authenticate.
+4. Complete required verification.
+5. Confirm eligibility.
+6. Read election instructions.
+7. Review contests.
+8. Make selections.
+9. Review the complete ballot.
+10. Submit once.
+11. Receive clear confirmation.
+12. Safely exit.
+
+Minimize distractions during ballot completion.
+
+## 19.3 Error messages
+
+Errors should explain:
+
+* What happened
+* Whether the user’s vote was submitted
+* What the user should do
+* Whether retrying is safe
+* How to obtain support
+* A reference ID for investigation
+
+Never display a generic “Something went wrong” when the system can safely give actionable information.
+
+## 19.4 Responsive design
+
+Test:
+
+* Small mobile phones
+* Standard mobile devices
+* Tablets
+* Laptops
+* Large desktops
+* Portrait and landscape
+* Browser zoom
+* Long candidate names
+* Long election names
+* Slow devices
+* slow connections
+
+Prevent horizontal scrolling and hidden primary actions.
+
+## 19.5 Design-system consistency
+
+Standardize:
+
+* Typography
+* spacing
+* colours
+* buttons
+* forms
+* tables
+* cards
+* modals
+* alerts
+* status badges
+* navigation
+* icon usage
+* loading indicators
+* empty states
+* confirmation patterns
+
+Use one authoritative component library or design system.
+
+---
+
+# 20. ACCESSIBILITY AUDIT
+
+Target WCAG 2.2 Level AA.
+
+Verify:
+
+* Keyboard-only operation
+* Visible focus
+* logical tab order
+* skip links
+* semantic headings
+* landmarks
+* accessible labels
+* error association
+* screen-reader announcements
+* modal focus trapping
+* focus restoration
+* sufficient colour contrast
+* no colour-only communication
+* touch-target sizing
+* zoom to 200% and beyond
+* reduced-motion support
+* table semantics
+* accessible charts
+* text alternatives
+* readable language
+* descriptive button names
+* form autocomplete attributes
+
+Voting must remain possible without a mouse.
+
+Do not rely only on automated accessibility scanners. Perform keyboard and screen-reader-oriented manual review.
+
+---
+
+# 21. PERFORMANCE AUDIT
+
+Establish measurable budgets for:
+
+* Initial page load
+* largest contentful paint
+* interaction responsiveness
+* layout shift
+* JavaScript bundle size
+* image size
+* API latency
+* database query latency
+* vote-submission latency
+* admin dashboard latency
+
+Optimize:
+
+* Server versus client components
+* code splitting
+* lazy loading
+* image delivery
+* font loading
+* caching
+* database queries
+* static rendering
+* revalidation
+* real-time subscriptions
+* repeated requests
+* expensive dashboard calculations
+
+Do not cache private or voter-specific data in shared caches.
+
+Treat vote submission as correctness-first. Do not use unsafe caching or asynchronous acknowledgement that could create uncertainty about whether a vote was recorded.
+
+---
+
+# 22. RELIABILITY AND FAILURE HANDLING
+
+Design and test failure scenarios involving:
+
+* Database unavailable
+* Authentication provider degraded
+* OTP provider delayed
+* Email provider unavailable
+* Vercel function timeout
+* third-party API timeout
+* network interruption during voting
+* duplicate request
+* deployment during an active election
+* invalid environment variable
+* exhausted database connections
+* storage unavailable
+* real-time subscription failure
+* DNS problem
+* expired certificate
+* partial regional outage
+
+For each failure:
+
+* Define user-facing behaviour.
+* Define retry behaviour.
+* Define operator alert.
+* Define recovery procedure.
+* Confirm no vote duplication or loss.
+* Confirm no sensitive data leakage.
+
+Use timeouts, bounded retries, circuit breakers where appropriate, and idempotent operations.
+
+---
+
+# 23. OBSERVABILITY
+
+Implement:
+
+## Logging
+
+* Structured logs
+* Correlation IDs
+* Appropriate log levels
+* Redaction
+* Environment and release identifiers
+* Election and organization context where safe
+
+## Metrics
+
+Monitor:
+
+* Request rate
+* Error rate
+* API latency
+* Database latency
+* Connection usage
+* Authentication failures
+* OTP failures
+* Vote-submission success and failure
+* Duplicate-vote rejections
+* Result-generation failures
+* active voters
+* queue depth where applicable
+* resource usage
+
+## Tracing
+
+Trace critical paths:
+
+* Authentication
+* Eligibility check
+* Ballot loading
+* Vote submission
+* Result aggregation
+* Report export
+
+## Alerts
+
+Create actionable alerts for:
+
+* Elevated login failures
+* Elevated OTP failures
+* Vote-submission failures
+* Database saturation
+* unusual administrator actions
+* sudden turnout anomalies
+* unexpected result changes
+* RLS or authorization failures
+* repeated webhook failures
+* deployment failures
+* backup failures
+* certificate and domain problems
+
+Alerts must specify owner, severity, and response procedure.
+
+---
+
+# 24. STATUS PAGE AND INCIDENT RESPONSE
+
+The status system should report only appropriate operational information.
+
+Potential components:
+
+* Main VoteWise website
+* Authentication
+* Voter verification
+* Voting service
+* Results service
+* Notifications
+* Administrator dashboard
+* API
+* Database
+
+Create an incident-response plan covering:
+
+1. Detection
+2. Triage
+3. Severity assignment
+4. Containment
+5. Evidence preservation
+6. Communication
+7. Recovery
+8. Election-official decision
+9. Post-incident analysis
+10. Corrective action
+
+Define election-day contacts and escalation paths.
+
+Never reveal exploitable technical details on a public status page.
+
+---
+
+# 25. TESTING STRATEGY
+
+## 25.1 Unit tests
+
+Test:
+
+* Validation
+* Election-state transitions
+* Eligibility rules
+* ballot rules
+* result calculations
+* percentage calculations
+* permission helpers
+* date handling
+* timezone handling
+* normalization
+* idempotency logic
+
+## 25.2 Integration tests
+
+Test:
+
+* API plus database
+* authentication plus authorization
+* Supabase RLS
+* voter import
+* ballot submission
+* duplicate submission
+* result generation
+* audit logging
+* notification delivery
+* storage permissions
+
+## 25.3 End-to-end tests
+
+Cover at least:
+
+* Voter registration
+* voter verification
+* login
+* password reset
+* OTP flow
+* eligible voter journey
+* ineligible voter rejection
+* complete ballot
+* abstention if supported
+* duplicate vote attempt
+* network interruption during submission
+* election before start
+* election after closure
+* admin election creation
+* candidate setup
+* voter import
+* opening and closing voting
+* result certification
+* result publication
+* permissions for every role
+* account suspension
+* session expiry
+
+## 25.4 Security tests
+
+Perform:
+
+* Static analysis
+* dependency scanning
+* secret scanning
+* RLS tests
+* authorization tests
+* injection testing
+* cross-site scripting testing
+* CSRF testing where applicable
+* rate-limit testing
+* upload testing
+* session testing
+* API fuzzing
+* security-header testing
+* manual privilege-escalation review
+
+## 25.5 Concurrency tests
+
+Run simultaneous requests to verify:
+
+* One voter cannot cast two ballots.
+* Idempotent retry returns a safe result.
+* Election-state changes do not create partial submissions.
+* Result counts remain consistent.
+* Administrative actions remain atomic.
+
+## 25.6 Load testing
+
+Load-test with production-like conditions.
+
+Scenarios:
+
+* Login surge
+* OTP surge
+* Ballot-page surge
+* Vote-submission surge
+* Public turnout surge
+* Result-publication surge
+* Admin dashboard under peak load
+
+Do not load-test the real production election without explicit authorization and controls.
+
+## 25.7 Test data
+
+Use synthetic data.
+
+Never copy unnecessary real voter information into local, test, preview, or staging environments.
+
+---
+
+# 26. CODE-QUALITY AUDIT
+
+Require:
+
+* Strict TypeScript where applicable
+* No unjustified `any`
+* No ignored type errors
+* No disabled lint rules without explanation
+* No unreachable code
+* No unused production code
+* No duplicate business logic
+* No circular dependencies
+* No hard-coded environment assumptions
+* No silent promise failures
+* No unhandled exceptions
+* No ambiguous boolean flags
+* No excessively large components
+* No unbounded queries
+* No client-side secrets
+* No production console debugging containing sensitive information
+
+Review:
+
+* Naming
+* module boundaries
+* error handling
+* async behaviour
+* transaction safety
+* null handling
+* timezone handling
+* serialization
+* data validation
+* maintainability
+* testability
+
+Add comments only where they explain non-obvious decisions. Do not compensate for confusing code with excessive comments.
+
+---
+
+# 27. DEPENDENCY AND SUPPLY-CHAIN AUDIT
+
+Inventory direct and transitive dependencies.
+
+Identify:
+
+* Known vulnerabilities
+* abandoned packages
+* duplicate packages
+* unnecessary packages
+* overly broad packages
+* packages executing install scripts
+* outdated runtime versions
+* incompatible peer dependencies
+* packages with questionable provenance
+
+Require:
+
+* Lockfile committed
+* deterministic installation
+* dependency scanning in CI
+* automated update process
+* review before major upgrades
+* minimal production dependencies
+* protected package-manager configuration
+
+Never apply major dependency upgrades blindly. Run regression tests and inspect migration notes.
+
+---
+
+# 28. ENVIRONMENT AND SECRET MANAGEMENT
+
+Create a complete environment-variable registry containing:
+
+* Name
+* Purpose
+* Owner
+* Required environments
+* Secret classification
+* Rotation procedure
+* Validation rule
+* Safe default, if any
+* Service dependency
+
+Use separate configuration for:
+
+* Local development
+* Test
+* Preview
+* Staging
+* Production
+
+Never use production credentials in preview deployments.
+
+Validate required variables during startup or build.
+
+Secrets must:
+
+* Remain outside Git
+* Be stored in approved secret systems
+* Be scoped minimally
+* Be rotated periodically
+* Be revocable
+* Not appear in logs
+* Not appear in browser bundles
+* Not be included in screenshots or documentation
+
+Search the repository and Git history for exposed secrets. Revoke exposed credentials; deleting them from the latest commit is insufficient.
+
+---
+
+# 29. CI/CD AND GITHUB AUDIT
+
+Create or improve a CI pipeline that runs on pull requests:
+
+1. Clean dependency installation
+2. Formatting validation
+3. Linting
+4. Type checking
+5. Unit tests
+6. Integration tests
+7. Production build
+8. Dependency scan
+9. Secret scan
+10. Static security scan
+11. Migration validation
+12. Optional preview deployment
+13. End-to-end smoke tests
+
+Protect the production branch with:
+
+* Pull-request review
+* required status checks
+* no direct push
+* controlled administrator bypass
+* signed commits where organizationally required
+* restricted secrets
+* least-privilege GitHub tokens
+* environment protection
+* deployment approval
+
+Production deployment should be reproducible and traceable to a commit.
+
+---
+
+# 30. VERCEL DEPLOYMENT AUDIT
+
+Verify:
+
+* Correct project linkage
+* Correct framework settings
+* Correct build command
+* Correct output configuration
+* Correct Node.js runtime
+* Separate preview and production variables
+* No production secrets available to untrusted previews
+* Function region aligned with the database where practical
+* Function timeout suitability
+* Cron-job security
+* WAF or firewall rules
+* deployment logs
+* rollback procedure
+* deployment protection
+* domain assignment
+* TLS
+* redirects
+* canonical domain
+* cache behaviour
+* security headers
+
+Do not deploy unreviewed database migrations automatically into an active election.
+
+Use a deployment freeze during high-risk election windows except for approved emergency changes.
+
+---
+
+# 31. DNS AND DOMAIN AUDIT
+
+For every domain and subdomain:
+
+* Confirm intended service.
+* Confirm DNS record type.
+* Confirm destination.
+* Confirm proxy status where Cloudflare is used.
+* Confirm TLS mode.
+* Confirm certificate coverage.
+* Confirm redirects.
+* Confirm domain ownership.
+* Confirm no orphaned third-party mapping.
+* Confirm no subdomain-takeover risk.
+* Confirm email authentication records where mail is sent.
+
+Review:
+
+* A and AAAA records
+* CNAME records
+* wildcard records
+* MX
+* SPF
+* DKIM
+* DMARC
+* CAA
+* DNSSEC where appropriate
+
+Avoid unnecessary wildcard DNS. A wildcard must not unintentionally expose preview deployments or unclaimed services.
+
+---
+
+# 32. EMAIL, SMS, AND NOTIFICATION AUDIT
+
+Verify:
+
+* Provider authentication
+* approved sender identities
+* SPF, DKIM, and DMARC
+* template accuracy
+* message localization
+* retry behaviour
+* rate limits
+* bounce handling
+* unsubscribe behaviour for non-transactional messages
+* delivery event processing
+* secure webhook verification
+* notification logging
+* privacy-safe content
+
+Never place ballot selections in email, SMS, WhatsApp, or push notifications.
+
+Election reminders must not falsely imply that the system knows how a voter voted.
+
+---
+
+# 33. DOCUMENTATION REQUIREMENTS
+
+Produce:
+
+## Developer documentation
+
+* Local setup
+* Architecture
+* directory structure
+* database setup
+* migrations
+* environment variables
+* scripts
+* testing
+* deployment
+* troubleshooting
+* contribution guidelines
+
+## API documentation
+
+* Authentication
+* endpoints
+* schemas
+* errors
+* pagination
+* rate limits
+* idempotency
+* examples
+* versioning
+
+## Administrator documentation
+
+* Creating elections
+* importing voters
+* managing candidates
+* opening and closing voting
+* monitoring turnout
+* certifying results
+* exporting reports
+* handling incidents
+* managing administrators
+
+## Voter documentation
+
+* Registration
+* verification
+* voting
+* troubleshooting
+* privacy
+* support
+* confirmation and receipt meaning
+
+## Operational runbooks
+
+* Election opening
+* election closure
+* failed OTP provider
+* database incident
+* authentication outage
+* suspected account compromise
+* suspected vote manipulation
+* deployment rollback
+* backup restoration
+* secret rotation
+* DNS incident
+* result reconciliation
+
+Documentation must match the implemented system.
+
+---
+
+# 34. IMPLEMENTATION PHASES
+
+Execute the work in controlled phases.
+
+## Phase 0: Safety preparation
+
+* Create a working branch.
+* Record baseline commit.
+* Verify tests and build status.
+* create a backup.
+* inventory secrets.
+* confirm development, staging, and production separation.
+* define rollback process.
+
+## Phase 1: Discovery
+
+* Map architecture.
+* map features.
+* map data flow.
+* map roles.
+* map election states.
+* map external integrations.
+* identify unverified behaviour.
+
+## Phase 2: Critical-risk remediation
+
+Prioritize:
+
+* Authentication bypasses
+* authorization failures
+* exposed secrets
+* client-side service-role keys
+* missing RLS
+* duplicate-voting vulnerabilities
+* vote-modification vulnerabilities
+* ballot-secrecy violations
+* result-manipulation risks
+* destructive migration risks
+
+## Phase 3: Data integrity
+
+* Fix schema constraints.
+* fix migrations.
+* add indexes.
+* add atomic vote submission.
+* add idempotency.
+* add result invariants.
+* add backup and restoration procedures.
+
+## Phase 4: Election workflows
+
+* Complete voter registration.
+* complete verification.
+* complete election configuration.
+* complete ballot flow.
+* complete results lifecycle.
+* complete administrator workflows.
+* complete audit logging.
+
+## Phase 5: Reliability and performance
+
+* Optimize database queries.
+* improve caching.
+* reduce bundle size.
+* configure timeouts and retries.
+* implement observability.
+* run concurrency and load tests.
+
+## Phase 6: UX and accessibility
+
+* Resolve broken states.
+* improve responsiveness.
+* implement accessible interaction.
+* standardize components.
+* improve error recovery.
+* verify mobile voting.
+
+## Phase 7: Deployment hardening
+
+* Complete CI/CD.
+* isolate environments.
+* configure Vercel.
+* configure Supabase.
+* configure DNS.
+* secure domains.
+* validate email authentication.
+* prepare rollback.
+
+## Phase 8: Release verification
+
+* Run all automated tests.
+* perform manual acceptance tests.
+* conduct security testing.
+* run election simulation.
+* restore a backup.
+* verify monitoring and alerts.
+* obtain approval against launch gates.
+
+---
+
+# 35. REQUIRED ELECTION SIMULATION
+
+Before production approval, conduct a complete simulated election.
+
+The simulation must include:
+
+* At least 1,000 synthetic voters
+* Multiple organizations or departments
+* Multiple positions
+* Single-choice and multi-choice contests where supported
+* Eligible and ineligible voters
+* Duplicate identifiers
+* Failed imports
+* Failed logins
+* OTP retries
+* Concurrent voting
+* Network interruption
+* Duplicate submissions
+* election pause and resume
+* election closure
+* result calculation
+* result certification
+* result publication
+* audit export
+* backup
+* restoration
+* reconciliation
+
+Document:
+
+* Expected totals
+* Actual totals
+* Differences
+* Performance
+* errors
+* alerts
+* operator actions
+* unresolved risks
+
+The final calculated results must match the known synthetic input exactly.
+
+---
+
+# 36. PRODUCTION LAUNCH GATES
+
+VoteWise must not be declared production-ready until all of the following are satisfied.
+
+## Security gate
+
+* No unresolved Critical finding
+* No unapproved High finding
+* RLS verified
+* Privileged keys server-only
+* Administrator MFA enabled
+* Authorization tests pass
+* Secret scan passes
+* Security headers verified
+* Rate limiting verified
+* Threat model reviewed
+
+## Election-integrity gate
+
+* Exactly-once voting verified
+* Duplicate voting blocked by database-backed controls
+* Atomic vote submission verified
+* Eligibility enforced server-side
+* ballot secrecy design documented
+* votes protected against unauthorized modification
+* result calculation verified
+* premature results blocked
+* election state machine enforced
+* audit logs verified
+
+## Reliability gate
+
+* Load test passes
+* Concurrency test passes
+* Backup succeeds
+* Restoration succeeds
+* Monitoring works
+* Alerts are delivered
+* Rollback is tested
+* Incident runbooks exist
+
+## Quality gate
+
+* Build passes
+* lint passes
+* type check passes
+* automated tests pass
+* critical journeys pass end-to-end
+* no production mock data
+* no unresolved blocking TODO
+* no hidden runtime error
+
+## UX and accessibility gate
+
+* Mobile voting verified
+* Keyboard voting verified
+* Major WCAG 2.2 AA issues resolved
+* Loading, empty, error, and recovery states implemented
+* Slow-network behaviour verified
+* user-facing copy reviewed
+
+## Operations gate
+
+* Environment registry completed
+* Production variables verified
+* Domains and TLS verified
+* DNS documented
+* support process active
+* administrator documentation complete
+* election-day contacts confirmed
+* deployment freeze policy defined
+
+---
+
+# 37. REQUIRED AUDIT REPORT FORMAT
+
+Produce the final audit report in this structure.
+
+## A. Executive summary
+
+Include:
+
+* Overall readiness score
+* Current risk level
+* Major strengths
+* Major weaknesses
+* Deployment recommendation
+* Estimated production confidence
+* Blocking issues
+
+## B. Architecture summary
+
+* System diagram
+* stack
+* data flow
+* trust boundaries
+* external dependencies
+
+## C. Findings table
+
+Columns:
+
+| ID | Finding | Severity | Area | Affected Files | Status |
+| -- | ------- | -------- | ---- | -------------- | ------ |
+
+## D. Detailed findings
+
+For each finding:
+
+### Finding ID and title
+
+**Severity:**
+**Category:**
+**Affected components:**
+**Evidence:**
+**Reproduction:**
+**Root cause:**
+**Election impact:**
+**Security impact:**
+**Required correction:**
+**Implemented change:**
+**Tests added:**
+**Verification result:**
+**Residual risk:**
+
+## E. Feature-completeness matrix
+
+| Feature | Frontend | Backend | Database | Authorization | Tests | Status |
+| ------- | -------- | ------- | -------- | ------------- | ----- | ------ |
+
+## F. Security-control matrix
+
+Map implemented controls to the relevant OWASP ASVS areas.
+
+## G. Performance results
+
+Include:
+
+* Test environment
+* workload
+* latency percentiles
+* throughput
+* errors
+* database behaviour
+* bottlenecks
+* remediation
+
+## H. Release checklist
+
+Mark every item as:
+
+* Pass
+* Fail
+* Not applicable
+* Unverified
+
+## I. Remaining risks
+
+Explain accepted, deferred, and unresolved risks.
+
+## J. Final recommendation
+
+Use exactly one:
+
+* Approved for production
+* Approved for limited pilot
+* Conditionally approved
+* Not approved for production
+
+Do not use “Approved for production” unless every blocking launch gate passes.
+
+---
+
+# 38. IMPLEMENTATION REPORTING FORMAT
+
+After every implementation batch, report:
+
+## Batch objective
+
+What was addressed.
+
+## Files changed
+
+List all changed files.
+
+## Database changes
+
+List migrations, functions, policies, indexes, and constraints.
+
+## Behavioural changes
+
+Explain what users and administrators will observe.
+
+## Security effects
+
+Explain which risks were reduced.
+
+## Tests
+
+List new and existing tests run.
+
+## Verification
+
+Provide commands and results.
+
+## Remaining issues
+
+List anything incomplete or unverified.
+
+## Rollback
+
+Explain how to reverse the batch safely.
+
+---
+
+# 39. DEFINITION OF DONE
+
+A feature is complete only when:
+
+* Requirements are documented.
+* UI is implemented.
+* Backend is implemented.
+* Database rules are implemented.
+* Authentication is enforced.
+* Authorization is enforced.
+* Validation is implemented.
+* Errors are handled.
+* Loading and empty states exist.
+* Mobile behaviour is verified.
+* Accessibility is reviewed.
+* Audit events exist where required.
+* Observability exists.
+* Automated tests exist.
+* Security tests pass.
+* Documentation is updated.
+* Production configuration is identified.
+* No mock or placeholder behaviour remains.
+* Acceptance criteria pass.
+
+A page rendering successfully is not evidence that the underlying feature is complete.
+
+---
+
+# 40. FINAL COMMAND
+
+Begin by auditing the entire VoteWise repository. Do not immediately rewrite the application.
+
+First produce:
+
+1. Repository and architecture map
+2. Feature inventory
+3. Role and permission matrix
+4. Election state machine
+5. Data-flow and trust-boundary analysis
+6. Threat model
+7. Prioritized findings
+8. Phased remediation plan
+9. Initial launch blockers
+
+Then implement corrections in small, auditable batches, beginning with Critical and High election-integrity and security risks.
+
+For every change:
+
+* Preserve intended VoteWise functionality.
+* Explain the root cause.
+* Implement the correction.
+* add or update tests.
+* run relevant verification.
+* report exact files changed.
+* report unresolved risks.
+* avoid declaring success without evidence.
+
+The final objective is not merely for VoteWise to build or look attractive. The objective is for VoteWise to conduct real elections safely, accurately, transparently, accessibly, reliably, and with sufficient evidence to investigate and resolve disputes.

@@ -14,6 +14,7 @@ export const POST = api(async (req) => {
   if (!rl.ok) {
     return NextResponse.json(fail(ERR.RATE_LIMITED, "Too many vote attempts. Wait a minute."), { status: 429 });
   }
-  const result = await castVote(voter, input);
+  const ip = getClientIp(req);
+  const result = await castVote(voter, { ...input, ipAddress: ip });
   return ok(result);
 });

@@ -1051,3 +1051,34 @@ Stage Summary:
 - All routes, APIs, and workflows verified.
 - Mobile + desktop responsive.
 - Zero bugs found.
+
+---
+Task ID: AUDIT-3.1
+Agent: Explore (Repository Map)
+Task: Build complete repository map for VoteWise
+
+Work Log:
+- Read worklog.md (prior Task 1-b covered the ORIGINAL prototype; this rebuild is the next-gen version).
+- Read root config: package.json, tsconfig.json, next.config.ts, Dockerfile, docker-compose.prod.yml, Caddyfile, Caddyfile.prod, .env, .env.production.example, .dockerignore, .gitignore.
+- Read prisma/schema.prisma end-to-end (459 lines / 21 models). Read prisma/seed.ts (226 lines).
+- Read src/proxy.ts (Next 16 middleware successor). Read src/app/layout.tsx, src/app/admin/page.tsx, src/app/dashboard/layout.tsx, src/app/o/[subdomain]/layout.tsx.
+- Read entire src/lib/ layer: db.ts, auth.ts, secrets.ts, guards.ts, ratelimit.ts, audit.ts, api.ts, validation.ts, org-context.ts, election-access.ts, constants.ts, utils.ts (counted). Plus sve/{crypto,ballot,vote-recorder,tally,receipt}.ts and realtime/{client,server}.ts.
+- Enumerated and read all 55 src/app/api/**/route.ts files. Confirmed 54 have `export const dynamic = "force-dynamic"`.
+- Read mini-services/results-service/{index.ts,package.json,Dockerfile} (only standalone service; 5 prototype mini-services were dropped).
+- Read scripts/{backup.sh, restore.sh, smoke-test.sh}. Read .github/workflows/ci-cd.yml (5 jobs: quality → build → security → deploy-staging → deploy-production w/ rollback).
+- Read docs/{00-EXECUTIVE-SUMMARY, 04-ARCHITECTURE, 05-DESIGN-SYSTEM, 06-ROADMAP, DEPLOYMENT-GUIDE}.md heads.
+- Searched for Sentry / Resend / Termii / Paystack / S3 / R2 / aws-sdk / next-auth / zustand actual usage vs. declared deps.
+- Confirmed: zustand declared in deps but NOT imported anywhere in src/ (dead dep, like next-auth was in the prototype). No @sentry package, no aws-sdk, no Resend/Termii SDKs — only env-var placeholders + extension-point comments. z-ai-web-dev-sdk used only in /api/chat for the chatbot widget.
+
+Stage Summary:
+- This is the next-gen clean-room rebuild (not the 157-model prototype). 21 Prisma models, 55 API routes, single SVE, single results-service mini-service.
+- Stack: Next.js 16.1.1 + React 19 + Prisma 6.11.1 + TypeScript 5 + Tailwind 4 + shadcn/ui (New York) + jose 6.2 + socket.io 4.8 + @tanstack/react-query 5.82 + react-hook-form 7.60 + zod 4 + z-ai-web-dev-sdk 0.0.18. Runtime: Bun (bun.lock present, dev/run scripts use bun) with node:20-slim Docker fallback. SQLite in sandbox (file:/home/z/my-project/db/custom.db), PostgreSQL 16 in prod.
+- Auth: jose HS256 access token (15-min TTL) + opaque random refresh (7-day cookie, NOT DB-tracked in this rebuild) + scrypt passwords (N=16384,r=8,p=1,keylen=64). Voter auth: identifier → OTP (hashed with SVE_VOTER_PEPPER, 5-min TTL) → 30-min Voter.sessionToken (DB-stored, unique). TOTP 2FA scaffolded (RFC-6238 implementation in /api/dashboard/security/2fa). HttpOnly + SameSite=Lax + Secure-in-prod cookies `vw_access` + `vw_refresh`. No refresh-token family tracking, no concurrent-session cap, no IP allowlist (regression vs prototype).
+- SVE: AES-256-GCM + HMAC-SHA256 + scrypt + per-election voterHash = sha256(voterId|electionId|SVE_VOTER_PEPPER). 5 secrets fail-loud in prod via requireSecret(). 8-step validation pipeline → atomic $transaction (encrypt, create VoteRecord w/ UNIQUE idempotencyKey, upsert CandidateTally, mark voter.hasVoted + revoke session, mark ballot SUBMITTED, ElectionEvent, hash-chained AuditLog via writeAudit(tx, …) inside the txn — fixes the prototype's chain-fork race).
+- Anonymity: VoteRecord stores voterHash (one-way) + encryptedChoice + receiptCode (random unlinkable). verifyReceipt deliberately omits candidateId/encryptedChoice/voterHash/ipAddress/deviceFingerprint.
+- Deployment: 5-service docker-compose.prod (app + results-service + postgres:16-alpine + redis:7-alpine + caddy:2-alpine). Caddyfile.prod routes 8 host patterns (votewise.com.ng, www, admin [10r/s], api [100r/s], ws, *.votewise.com.ng, status, docs) with HSTS preload, CSP, WAF blocklist, rate limit, zero-downtime lb_try_duration. CI/CD: GitHub Actions 5 jobs (lint, tsc, build→ghcr.io, Trivy scan, staging-deploy + 12x health-retry, production-deploy w/ manual approval + auto-rollback on failure).
+- 3 ops scripts: backup.sh (hourly/daily/weekly/monthly w/ retention + sha256 + Slack alert), restore.sh (interactive confirm + checksum verify), smoke-test.sh (23 checks across public/API/auth-protected routes).
+- Documentation: 5 docs/*.md (EXECUTIVE-SUMMARY 148L, ARCHITECTURE 598L, DESIGN-SYSTEM 323L, ROADMAP 349L, DEPLOYMENT-GUIDE 429L).
+- 16 subdomains documented in Caddyfile.prod; only votewise.com.ng + *.votewise.com.ng are operationally distinct (admin/api/ws/status/docs all proxy to app:3000 — status/docs point to external services per comments).
+- Dead deps: zustand (declared, never imported).
+- Notable gaps for audit follow-up: (1) refresh token NOT stored/rotated server-side; (2) no in-app rate-limit sharing across replicas (only Caddy-level 50r/s); (3) SENTRY_DSN env var declared but no @sentry package + no instrumentation.ts; (4) RESEND/Termii/Paystack/S3 env vars declared but no SDK integration code — all are extension points; (5) TypeScript strict mode on but `noImplicitAny: false` and next.config.ts sets `typescript.ignoreBuildErrors: true` (build-time type errors are silently swallowed); (6) Voter.identifier @unique on [organizationId, identifier] but no DB-level check that OrganizationMember.email is globally unique (only per-org).

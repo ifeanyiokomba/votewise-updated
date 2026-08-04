@@ -41,7 +41,7 @@ jobs:
         run: bun run lint
 
       - name: TypeScript check
-        run: npx tsc --noEmit || true
+        run: npx tsc --noEmit
 
   # ============================================================
   # Job 2: Build Docker image
@@ -102,7 +102,7 @@ jobs:
         with:
           scan-type: fs
           scan-ref: .
-          exit-code: 0
+          exit-code: 1
           severity: CRITICAL,HIGH
 
       - name: Check for secrets in code
@@ -138,7 +138,7 @@ jobs:
             git pull origin main
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d
-            docker compose -f docker-compose.prod.yml exec app npx prisma db push --accept-data-loss
+            docker compose -f docker-compose.prod.yml exec app npx prisma migrate deploy
 
       - name: Smoke test
         run: |
@@ -180,7 +180,7 @@ jobs:
             git pull origin main
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d
-            docker compose -f docker-compose.prod.yml exec app npx prisma db push --accept-data-loss
+            docker compose -f docker-compose.prod.yml exec app npx prisma migrate deploy
 
       - name: Production health check
         run: |
