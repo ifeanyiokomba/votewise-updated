@@ -1,36 +1,43 @@
 import { db } from "@/lib/db";
 import type { Organization } from "@prisma/client";
+import {
+  extractTenantSlug,
+  isPlatformDomain,
+  normalizeHostname,
+  validateSubdomainSlug,
+} from "@/lib/tenant-utils";
 
 /**
- * Multi-tenant resolution. Order:
- *   1. ?x-vw-org= / x-vw-org header  (dev / platform-admin override)
- *   2. custom domain lookup
- *   3. subdomain from host
- *   4. null (public website)
+ * Multi-tenant resolution. Per Section 3.3 + 3.4 of the Multi-Tenant Directive:
  *
- * Cached per-instance for 30s to avoid a DB hit on every request.
+ *   1. Read trusted request hostname
+ *   2. Normalize (lowercase, strip port)
+ *   3. Check if platform-reserved domain → return null (public website)
+ *   4. If tenant subdomain, extract slug
+ *   5. Validate slug against reserved list
+ *   6. Resolve tenant from database
+ *   7. Confirm tenant is active
+ *   8. Return tenant context
+ *
+ * Also supports:
+ *   - Custom domain lookup (Section 4)
+ *   - Dev/platform-admin override via x-vw-org header
+ *
+ * Cached per-instance for 30s (keyed by hostname/subdomain).
  */
 
 type CachedOrg = { org: Organization | null; at: number };
 const cache = new Map<string, CachedOrg>();
 const TTL = 30_000;
 
-function extractSubdomain(host: string): string | null {
-  // strip port
-  const h = host.split(":")[0]!;
-  // localhost / ip → no subdomain
-  if (/^localhost$|^\d+\.\d+\.\d+\.\d+$/.test(h)) return null;
-  const parts = h.split(".");
-  // foo.votewise.com.ng → foo ; a.b.votewise.com.ng → a (first label)
-  if (parts.length >= 3) return parts[0]!;
-  return null;
-}
-
 export async function resolveOrganization(req: Request): Promise<Organization | null> {
-  // 1. explicit override
+  // 1. explicit override (dev / platform-admin only)
   const url = new URL(req.url);
   const override = url.searchParams.get("x-vw-org") ?? req.headers.get("x-vw-org");
   if (override) {
+    // Validate the override slug too
+    const slugError = validateSubdomainSlug(override);
+    if (slugError) return null; // don't resolve invalid/reserved slugs
     const cached = cache.get(override);
     if (cached && Date.now() - cached.at < TTL) return cached.org;
     const org = await db.organization.findUnique({ where: { subdomain: override } });
@@ -39,30 +46,58 @@ export async function resolveOrganization(req: Request): Promise<Organization | 
   }
 
   // 2. host → custom domain or subdomain
-  const host = req.headers.get("host") ?? "";
-  if (!host) return null;
+  const rawHost = req.headers.get("host") ?? "";
+  if (!rawHost) return null;
+
+  const host = normalizeHostname(rawHost);
+
+  // 3. Check if platform-reserved domain → public website
+  if (isPlatformDomain(host)) return null;
 
   const cached = cache.get(host);
   if (cached && Date.now() - cached.at < TTL) return cached.org;
 
   let org: Organization | null = null;
-  // custom domain
+
+  // 4. Try custom domain lookup first
   org = await db.organization.findUnique({ where: { customDomain: host } });
+
+  // 5. If not custom domain, try tenant subdomain extraction
   if (!org) {
-    const sub = extractSubdomain(host);
-    if (sub && sub !== "www" && sub !== "admin") {
-      org = await db.organization.findUnique({ where: { subdomain: sub } });
+    const slug = extractTenantSlug(host);
+    if (slug) {
+      // slug is already validated against reserved list by extractTenantSlug
+      org = await db.organization.findUnique({ where: { subdomain: slug } });
     }
   }
+
+  // 6. Verify tenant is active (not suspended/archived/deleted)
+  if (org && !["ACTIVE", "ONBOARDING", "PAST_DUE"].includes(org.status)) {
+    // Suspended/restricted/deleted tenants — don't serve content
+    cache.set(host, { org: null, at: Date.now() });
+    return null;
+  }
+
   cache.set(host, { org, at: Date.now() });
   return org;
 }
 
 /** For org-scoped route segments like /o/[subdomain] */
 export async function resolveOrgBySubdomain(subdomain: string): Promise<Organization | null> {
+  // Validate slug against reserved list
+  const slugError = validateSubdomainSlug(subdomain);
+  if (slugError) return null;
+
   const cached = cache.get(subdomain);
   if (cached && Date.now() - cached.at < TTL) return cached.org;
   const org = await db.organization.findUnique({ where: { subdomain } });
+
+  // Verify tenant is active
+  if (org && !["ACTIVE", "ONBOARDING", "PAST_DUE"].includes(org.status)) {
+    cache.set(subdomain, { org: null, at: Date.now() });
+    return null;
+  }
+
   cache.set(subdomain, { org, at: Date.now() });
   return org;
 }
