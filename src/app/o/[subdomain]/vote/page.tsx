@@ -189,7 +189,7 @@ export default function VotePage() {
             </div>
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="identifier">Voter identifier (matric / ID / membership no.)</Label>
+                <Label htmlFor="identifier">Voter identifier (ID / membership no.)</Label>
                 <Input id="identifier" value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="e.g. VOT/2025000" />
               </div>
               <Button onClick={() => sendOtpMut.mutate()} disabled={!identifier || sendOtpMut.isPending}>

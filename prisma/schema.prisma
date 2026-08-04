@@ -21,10 +21,10 @@ model Organization {
   name         String
   subdomain    String   @unique
   customDomain String?  @unique
-  category     String   @default("UNIVERSITY") // UNIVERSITY|COMPANY|COOPERATIVE|CHURCH|NGO|POLITICAL_PARTY|ASSOCIATION|GOVERNMENT
-  status       String   @default("ACTIVE") // ACTIVE|SUSPENDED|ARCHIVED
+  category     String   @default("ORGANIZATION") // ORGANIZATION|UNIVERSITY|COMPANY|COOPERATIVE|CHURCH|NGO|POLITICAL_PARTY|ASSOCIATION|GOVERNMENT|CLUB|UNION|COMMUNITY
+  status       String   @default("ACTIVE") // PENDING_VERIFICATION|ONBOARDING|ACTIVE|PAST_DUE|RESTRICTED|SUSPENDED|ARCHIVED|DELETED
   plan         String   @default("FREE") // FREE|PAYG|ENTERPRISE
-  voterQuota   Int      @default(100) // max voters allowed by plan
+  voterQuota   Int      @default(100)
   paidUntil    DateTime?
   locale       String   @default("en")
   timezone     String   @default("Africa/Lagos")
@@ -36,6 +36,10 @@ model Organization {
   elections    Election[]
   voters       Voter[]
   auditLogs    AuditLog[]
+  units        OrganizationUnit[]
+  attributeDefinitions MemberAttributeDefinition[]
+  domains      OrganizationDomain[]
+  orgSettings  OrganizationSetting?
 }
 
 model OrganizationMember {
@@ -181,6 +185,7 @@ model Voter {
   sessions        VoterSession[]
   ballots         Ballot[]
   votes           VoteRecord[]
+  attributeValues MemberAttributeValue[]
 
   @@unique([organizationId, identifier])
   @@index([organizationId, email])
@@ -456,4 +461,126 @@ model ApiKey {
 
   @@index([organizationId, isActive])
   @@index([keyHash])
+}
+
+// ============================================================
+// Multi-tenant: Organization Units (flexible org structure)
+// ============================================================
+
+model OrganizationUnit {
+  id              String   @id @default(cuid())
+  organizationId  String
+  parentUnitId    String?  // self-reference for hierarchy
+  unitType        String   // faculty|department|branch|division|chapter|region|province|zone|parish|committee|constituency|class|level|location|custom
+  name            String
+  slug            String
+  description     String?
+  metadata        String?  // JSON for custom attributes
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  parentUnit      OrganizationUnit? @relation("UnitHierarchy", fields: [parentUnitId], references: [id], onDelete: SetNull)
+  childUnits      OrganizationUnit[] @relation("UnitHierarchy")
+
+  @@unique([organizationId, slug])
+  @@index([organizationId, unitType])
+  @@index([parentUnitId])
+}
+
+// ============================================================
+// Multi-tenant: Member Attributes (custom fields)
+// ============================================================
+
+model MemberAttributeDefinition {
+  id              String   @id @default(cuid())
+  organizationId  String
+  fieldName       String   // e.g. "matric_number", "employee_id", "membership_class"
+  label           String   // display label e.g. "Matriculation Number"
+  fieldType       String   // TEXT|NUMBER|EMAIL|PHONE|SELECT|DATE
+  isRequired      Boolean  @default(false)
+  isUnique        Boolean  @default(false)
+  isVisible       Boolean  @default(true)
+  isEligibility   Boolean  @default(false) // can be used in eligibility rules
+  options         String?  // JSON array for SELECT type
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  values          MemberAttributeValue[]
+
+  @@unique([organizationId, fieldName])
+  @@index([organizationId])
+}
+
+model MemberAttributeValue {
+  id              String   @id @default(cuid())
+  attributeDefinitionId String
+  voterId         String
+  value           String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  definition      MemberAttributeDefinition @relation(fields: [attributeDefinitionId], references: [id], onDelete: Cascade)
+  voter           Voter @relation(fields: [voterId], references: [id], onDelete: Cascade)
+
+  @@unique([attributeDefinitionId, voterId])
+  @@index([voterId])
+}
+
+// ============================================================
+// Multi-tenant: Organization Domain (custom domain verification)
+// ============================================================
+
+model OrganizationDomain {
+  id              String   @id @default(cuid())
+  organizationId  String
+  hostname        String   @unique
+  domainType      String   @default("CUSTOM_DOMAIN") // PLATFORM_SUBDOMAIN|CUSTOM_DOMAIN
+  verificationStatus String @default("PENDING") // PENDING|VERIFIED|DISCONNECTED
+  verificationToken String?
+  verifiedAt      DateTime?
+  isPrimary       Boolean  @default(false)
+  sslStatus       String   @default("PENDING") // PENDING|ACTIVE|EXPIRED
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+// ============================================================
+// Multi-tenant: Organization Settings (terminology, config)
+// ============================================================
+
+model OrganizationSetting {
+  id              String   @id @default(cuid())
+  organizationId  String   @unique
+  // Terminology
+  memberLabel     String   @default("Member")
+  voterLabel      String   @default("Voter")
+  candidateLabel  String   @default("Candidate")
+  electionLabel   String   @default("Election")
+  unitLabel       String   @default("Unit")
+  // Election defaults
+  defaultRequireAccreditation Boolean @default(false)
+  defaultShowLiveResults      Boolean @default(true)
+  defaultHideResultsUntilEnd  Boolean @default(false)
+  defaultNotaEnabled          Boolean @default(true)
+  defaultBallotRandomization  Boolean @default(true)
+  // Security
+  requireMfaForAdmins         Boolean @default(false)
+  ipAllowlist                 String? // JSON array of CIDR
+  // Notifications
+  defaultOtpChannel           String   @default("EMAIL") // EMAIL|SMS|WHATSAPP
+  // Data retention
+  voteRecordRetentionDays     Int      @default(2555) // ~7 years
+  // Privacy
+  allowVoterSearch            Boolean  @default(true)
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }

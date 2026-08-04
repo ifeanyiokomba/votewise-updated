@@ -10,16 +10,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, LayoutTemplate, GraduationCap, Building2, Users2, Church, FileText } from "lucide-react";
+import { ArrowLeft, LayoutTemplate, Users2, Building2, FileText, Users } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
-const TEMPLATE_ICONS: Record<string, typeof GraduationCap> = {
-  sug: GraduationCap,
+const TEMPLATE_ICONS: Record<string, typeof Users2> = {
+  executive: Users2,
   board: Building2,
-  agm: Users2,
-  faculty: FileText,
-  church: Church,
+  agm: Users,
+  single: FileText,
+  council: Users2,
 };
 
 export default function NewElectionPage() {

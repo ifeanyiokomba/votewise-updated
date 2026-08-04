@@ -15,8 +15,10 @@ export const schemas = {
       .string()
       .min(2)
       .max(40)
-      .regex(/^[a-z0-9-]+$/, "Lowercase letters, numbers, hyphens only"),
+      .regex(/^[a-z0-9-]+$/, "Lowercase letters, numbers, hyphens only")
+      .refine((s) => !s.startsWith("-") && !s.endsWith("-"), "Cannot start or end with hyphen"),
     category: z.enum([
+      "ORGANIZATION",
       "UNIVERSITY",
       "COMPANY",
       "COOPERATIVE",
@@ -25,6 +27,9 @@ export const schemas = {
       "POLITICAL_PARTY",
       "ASSOCIATION",
       "GOVERNMENT",
+      "CLUB",
+      "UNION",
+      "COMMUNITY",
     ]),
     ownerName: z.string().min(2).max(80),
     ownerEmail: z.string().email(),

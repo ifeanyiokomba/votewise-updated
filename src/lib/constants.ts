@@ -1,12 +1,16 @@
 export const ORG_CATEGORIES = [
+  { value: "ORGANIZATION", label: "General Organization" },
   { value: "UNIVERSITY", label: "University / School" },
-  { value: "COMPANY", label: "Company" },
+  { value: "COMPANY", label: "Company / Corporation" },
   { value: "COOPERATIVE", label: "Cooperative" },
-  { value: "CHURCH", label: "Church / Faith body" },
+  { value: "CHURCH", label: "Church / Religious Organization" },
   { value: "NGO", label: "NGO" },
-  { value: "POLITICAL_PARTY", label: "Political party" },
-  { value: "ASSOCIATION", label: "Association" },
-  { value: "GOVERNMENT", label: "Government" },
+  { value: "POLITICAL_PARTY", label: "Political Party" },
+  { value: "ASSOCIATION", label: "Professional / Trade Association" },
+  { value: "GOVERNMENT", label: "Government Institution" },
+  { value: "CLUB", label: "Club / Society" },
+  { value: "UNION", label: "Labour Union" },
+  { value: "COMMUNITY", label: "Community Association" },
 ] as const;
 
 export const ELECTION_STATUSES = {

@@ -6,17 +6,17 @@ import { z } from "zod";
 
 export const dynamic = "force-dynamic";
 
-// Pre-configured election templates
+// Pre-configured election templates — generalized for any organization type
 const TEMPLATES = {
-  sug: {
-    name: "Students' Union Government Election",
-    description: "Standard SUG election with President, Vice President, Secretary, and Treasurer positions.",
-    category: "UNIVERSITY",
+  executive: {
+    name: "Executive Committee Election",
+    description: "Standard election with President/Chairman, Vice, Secretary, and Treasurer positions.",
+    category: "ORGANIZATION",
     positions: [
-      { title: "President", description: "Head of the Students' Union Government", maxVotes: 1, candidates: 3 },
-      { title: "Vice President", description: "Deputy head of the SUG", maxVotes: 1, candidates: 3 },
-      { title: "Secretary General", description: "Records and communicates SUG decisions", maxVotes: 1, candidates: 2 },
-      { title: "Treasurer", description: "Manages SUG finances", maxVotes: 1, candidates: 2 },
+      { title: "President", description: "Head of the organization", maxVotes: 1, candidates: 3 },
+      { title: "Vice President", description: "Deputy head of the organization", maxVotes: 1, candidates: 3 },
+      { title: "Secretary General", description: "Records and communicates decisions", maxVotes: 1, candidates: 2 },
+      { title: "Treasurer", description: "Manages finances", maxVotes: 1, candidates: 2 },
     ],
   },
   board: {
@@ -31,7 +31,7 @@ const TEMPLATES = {
   },
   agm: {
     name: "Annual General Meeting Election",
-    description: "Cooperative/association AGM with Chairman, Vice Chairman, Secretary, and PRO.",
+    description: "Cooperative/association AGM with Chairman, Vice, Secretary, and PRO.",
     category: "COOPERATIVE",
     positions: [
       { title: "Chairman", description: "Presides over meetings", maxVotes: 1, candidates: 3 },
@@ -40,22 +40,22 @@ const TEMPLATES = {
       { title: "Public Relations Officer", description: "Manages external communications", maxVotes: 1, candidates: 2 },
     ],
   },
-  faculty: {
-    name: "Faculty Representative Election",
-    description: "Single-position election for faculty representative.",
-    category: "UNIVERSITY",
+  single: {
+    name: "Single-Position Election",
+    description: "Single-position election for a representative or officer.",
+    category: "ORGANIZATION",
     positions: [
-      { title: "Faculty Representative", description: "Represents the faculty in the SUG", maxVotes: 1, candidates: 4 },
+      { title: "Representative", description: "Elected representative", maxVotes: 1, candidates: 4 },
     ],
   },
-  church: {
-    name: "Church Council Election",
-    description: "Church leadership election with Pastor, Secretary, and Treasurer.",
-    category: "CHURCH",
+  council: {
+    name: "Council Leadership Election",
+    description: "Leadership election with Chairman, Secretary, and Treasurer.",
+    category: "ORGANIZATION",
     positions: [
-      { title: "Senior Pastor", description: "Spiritual leader of the congregation", maxVotes: 1, candidates: 2 },
-      { title: "Church Secretary", description: "Manages church records", maxVotes: 1, candidates: 2 },
-      { title: "Treasurer", description: "Manages church finances", maxVotes: 1, candidates: 2 },
+      { title: "Chairman", description: "Leader of the council", maxVotes: 1, candidates: 2 },
+      { title: "Secretary", description: "Manages records", maxVotes: 1, candidates: 2 },
+      { title: "Treasurer", description: "Manages finances", maxVotes: 1, candidates: 2 },
     ],
   },
 } as const;
@@ -75,7 +75,7 @@ export const GET = api(async (req) => {
 });
 
 const createSchema = z.object({
-  templateKey: z.enum(["sug", "board", "agm", "faculty", "church"]),
+  templateKey: z.enum(["executive", "board", "agm", "single", "council"]),
   electionName: z.string().min(3).max(120).optional(),
   startTime: z.string().datetime().optional(),
   endTime: z.string().datetime().optional(),

@@ -5,11 +5,16 @@ import { api, parseBody, ok } from "@/lib/api";
 import { schemas } from "@/lib/validation";
 import { HttpError } from "@/lib/guards";
 import { issueAccessToken, issueRefreshToken, setAuthCookies } from "@/lib/auth";
+import { validateSubdomainSlug } from "@/lib/tenant-utils";
 
 export const dynamic = "force-dynamic";
 
 export const POST = api(async (req) => {
   const input = await parseBody(req, schemas.register);
+
+  // Validate subdomain against reserved list
+  const slugError = validateSubdomainSlug(input.subdomain);
+  if (slugError) throw new HttpError("VALIDATION", slugError, 400);
 
   const existingSub = await db.organization.findUnique({ where: { subdomain: input.subdomain } });
   if (existingSub) throw new HttpError("CONFLICT", "Subdomain already taken", 409);
