@@ -5,6 +5,7 @@ import { SVE_SECRETS } from "@/lib/secrets";
 import { createHash, timingSafeEqual, createHmac } from "crypto";
 import { Buffer } from "buffer";
 import { z } from "zod";
+import QRCode from "qrcode";
 
 export const dynamic = "force-dynamic";
 
@@ -70,11 +71,17 @@ export const POST = api(async (req) => {
     data: { totpSecret: secret, totpEnabled: false },
   });
 
+  // Generate QR code locally (no external API dependency)
+  const qrCodeDataUrl = await QRCode.toDataURL(otpauthUrl, {
+    width: 200,
+    margin: 1,
+    color: { dark: "#163D2E", light: "#ffffff" },
+  });
+
   return ok({
     secret,
     otpauthUrl,
-    // QR code URL using a public API (in production, generate locally)
-    qrCodeUrl: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(otpauthUrl)}`,
+    qrCodeDataUrl,
   });
 });
 

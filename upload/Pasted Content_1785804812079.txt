@@ -1,0 +1,2081 @@
+You are correct. VoteWise is **not a school voting application**. It is a **multi-tenant election infrastructure platform** for universities, companies, churches, associations, unions, cooperatives, professional bodies, NGOs, government institutions, political organizations, clubs, communities, and other organizations.
+
+Each organization must operate through its own isolated workspace and subdomain, for example:
+
+```text
+unilag.votewise.com.ng
+acme.votewise.com.ng
+rccg-region10.votewise.com.ng
+nysc-enugu.votewise.com.ng
+engineers-association.votewise.com.ng
+```
+
+I have retained this as a core VoteWise requirement.
+
+The earlier architecture needs to be corrected around **tenant resolution, wildcard domains, organization isolation, flexible election models, tenant branding, tenant administration, and custom domains**.
+
+Use this updated directive for your AI builder.
+
+# VOTEWISE MULTI-TENANT PLATFORM ARCHITECTURE DIRECTIVE
+
+## 1. PRODUCT DEFINITION
+
+VoteWise must be designed and implemented as a multi-tenant Election Management and Digital Voting Platform.
+
+It must not be designed specifically for universities or student elections.
+
+VoteWise must support organizations such as:
+
+* Universities and schools
+* Companies and corporations
+* Churches and religious organizations
+* Professional associations
+* Trade associations
+* Cooperatives
+* Clubs and societies
+* Labour unions
+* Government institutions
+* NGOs
+* Political organizations
+* Community associations
+* Alumni organizations
+* Housing associations
+* Conferences
+* Shareholder organizations
+* Membership-based organizations
+* Event organizers
+* Any institution that conducts elections, polls, referendums, appointments, nominations, or voting exercises
+
+University-specific terminology must not be embedded into the core architecture.
+
+Terms such as:
+
+* Faculty
+* Department
+* Student
+* Matriculation number
+* Class level
+* School
+* Course
+
+must be optional tenant-specific attributes, not mandatory platform-wide concepts.
+
+The platform core must use generalized concepts such as:
+
+* Organization
+* Organizational unit
+* Member
+* Voter
+* Election
+* Contest
+* Candidate
+* Nominee
+* Eligibility group
+* Constituency
+* Membership identifier
+* Role
+* Ballot
+* Vote
+* Result
+* Certification
+
+---
+
+# 2. CORE MULTI-TENANT MODEL
+
+Every organization using VoteWise is a tenant.
+
+Each tenant must have:
+
+* A unique organization ID
+* A unique subdomain slug
+* An isolated organization workspace
+* Organization branding
+* Organization settings
+* Organization administrators
+* Organization members
+* Organization elections
+* Organization roles
+* Organization audit logs
+* Organization reports
+* Organization integrations
+* Organization notification settings
+* Organization security settings
+* Organization billing and subscription details where applicable
+
+Examples:
+
+```text
+Tenant: University of Lagos
+Subdomain: unilag.votewise.com.ng
+
+Tenant: Acme Manufacturing Ltd
+Subdomain: acme.votewise.com.ng
+
+Tenant: Nigerian Medical Association
+Subdomain: nma.votewise.com.ng
+
+Tenant: Community Development Union
+Subdomain: cdu.votewise.com.ng
+```
+
+No tenant must be able to read, modify, infer, export, or access another tenant’s data.
+
+---
+
+# 3. DOMAIN AND SUBDOMAIN ARCHITECTURE
+
+## 3.1 Reserved platform domains
+
+The following hostnames are reserved for VoteWise platform services:
+
+```text
+votewise.com.ng
+www.votewise.com.ng
+admin.votewise.com.ng
+api.votewise.com.ng
+docs.votewise.com.ng
+status.votewise.com.ng
+support.votewise.com.ng
+auth.votewise.com.ng
+```
+
+Suggested responsibilities:
+
+| Hostname                  | Responsibility                                |
+| ------------------------- | --------------------------------------------- |
+| `votewise.com.ng`         | Main marketing website                        |
+| `www.votewise.com.ng`     | Redirect or alias to main website             |
+| `admin.votewise.com.ng`   | VoteWise platform super-admin portal          |
+| `api.votewise.com.ng`     | Central API                                   |
+| `docs.votewise.com.ng`    | Public and developer documentation            |
+| `status.votewise.com.ng`  | Platform status page                          |
+| `support.votewise.com.ng` | Support portal                                |
+| `auth.votewise.com.ng`    | Central authentication surface where required |
+
+Reserved words must not be available as organization slugs.
+
+The reserved-slug list must include at least:
+
+```text
+www
+admin
+api
+docs
+status
+support
+auth
+mail
+smtp
+ftp
+cdn
+assets
+static
+app
+dashboard
+billing
+security
+help
+legal
+privacy
+terms
+system
+root
+superadmin
+internal
+staging
+preview
+development
+dev
+test
+testing
+```
+
+## 3.2 Organization subdomains
+
+Every tenant receives a subdomain:
+
+```text
+{organizationSlug}.votewise.com.ng
+```
+
+Examples:
+
+```text
+unilag.votewise.com.ng
+acme.votewise.com.ng
+nma.votewise.com.ng
+rccg-region10.votewise.com.ng
+```
+
+Organization onboarding must not require manually creating a DNS record for each tenant.
+
+Wildcard DNS must handle organization workspaces:
+
+```text
+*.votewise.com.ng
+```
+
+## 3.3 Host-based tenant resolution
+
+For every incoming request, the system must:
+
+1. Read the trusted request hostname.
+2. Normalize the hostname.
+3. Remove the port where applicable.
+4. determine whether the host is a platform-reserved domain.
+5. If it is a tenant subdomain, extract the tenant slug.
+6. Validate the slug.
+7. Resolve the tenant from the database.
+8. Confirm the tenant is active.
+9. Attach the tenant context to the request.
+10. Load tenant branding, configuration, permissions, and content.
+11. Reject unresolved or suspended tenants safely.
+
+Example:
+
+```text
+Request:
+https://acme.votewise.com.ng/elections
+
+Hostname:
+acme.votewise.com.ng
+
+Resolved slug:
+acme
+
+Resolved tenant:
+Acme Manufacturing Ltd
+
+Tenant context:
+organization_id = org_123
+```
+
+Tenant resolution must occur before tenant-specific data is queried.
+
+## 3.4 Hostname security
+
+Do not trust arbitrary client-provided host headers without validation.
+
+The application must:
+
+* Accept only approved VoteWise domains
+* normalize hostname casing
+* strip port numbers
+* reject malformed hostnames
+* reject unsupported domain suffixes
+* reject Unicode or punycode abuse where not intentionally supported
+* prevent host-header injection
+* avoid constructing password-reset or verification URLs from an untrusted host
+* use a configured canonical root domain
+* maintain a reserved-subdomain list
+* validate custom domains separately
+
+Do not derive tenant identity from a request-body `organizationId` when the tenant is already determined from the hostname.
+
+---
+
+# 4. CUSTOM DOMAIN SUPPORT
+
+The architecture should support future organization-owned domains, for example:
+
+```text
+vote.acme.com
+elections.unilag.edu.ng
+election.nma.org.ng
+```
+
+Create a tenant-domain model.
+
+Recommended fields:
+
+```text
+id
+organization_id
+hostname
+domain_type
+verification_status
+verification_token
+verified_at
+is_primary
+ssl_status
+created_at
+updated_at
+```
+
+Suggested domain types:
+
+```text
+PLATFORM_SUBDOMAIN
+CUSTOM_DOMAIN
+```
+
+Custom-domain onboarding should:
+
+1. Receive the requested domain.
+2. generate a verification token.
+3. instruct the tenant to create a DNS record.
+4. verify domain ownership.
+5. attach the domain to the correct tenant.
+6. provision TLS.
+7. mark the domain active.
+8. prevent the domain from being attached to multiple tenants.
+9. support removal and rotation.
+10. record all changes in audit logs.
+
+Do not allow unverified custom domains to serve tenant content.
+
+---
+
+# 5. TENANT RESOLUTION LAYER
+
+Create a dedicated tenant-resolution module.
+
+Suggested structure:
+
+```text
+packages/tenancy/
+├── tenant-resolver.ts
+├── hostname-parser.ts
+├── reserved-hostnames.ts
+├── tenant-context.ts
+├── tenant-cache.ts
+├── custom-domain-resolver.ts
+├── tenant-errors.ts
+└── tenant-resolver.test.ts
+```
+
+Suggested responsibilities:
+
+## `hostname-parser.ts`
+
+* Normalize hostnames
+* extract subdomains
+* distinguish platform hosts from tenant hosts
+* strip ports
+* validate domain suffixes
+
+## `tenant-resolver.ts`
+
+* Resolve tenant by platform subdomain
+* resolve tenant by custom domain
+* verify organization state
+* return tenant context
+
+## `tenant-context.ts`
+
+Expose trusted contextual information:
+
+```ts
+type TenantContext = {
+  organizationId: string
+  organizationSlug: string
+  organizationName: string
+  hostname: string
+  domainType: "platform_subdomain" | "custom_domain"
+  status: "active" | "suspended" | "archived"
+  branding: TenantBranding
+  settings: TenantSettings
+}
+```
+
+## `tenant-cache.ts`
+
+Cache safe tenant-resolution metadata where appropriate.
+
+Do not cache sensitive tenant records in a shared or incorrectly keyed cache.
+
+Every tenant cache key must include the hostname or organization ID.
+
+---
+
+# 6. REQUEST FLOW
+
+Every tenant request should follow this structure:
+
+```text
+Incoming Request
+        ↓
+Cloudflare
+        ↓
+Vercel or Application Edge
+        ↓
+Hostname Validation
+        ↓
+Tenant Resolution
+        ↓
+Tenant Status Validation
+        ↓
+Authentication
+        ↓
+Organization Membership Validation
+        ↓
+Authorization
+        ↓
+Domain Service
+        ↓
+Tenant-Scoped Database Operation
+        ↓
+Audit Event
+        ↓
+Response
+```
+
+For public tenant pages:
+
+```text
+Incoming Request
+        ↓
+Hostname Validation
+        ↓
+Tenant Resolution
+        ↓
+Load Public Tenant Configuration
+        ↓
+Load Public Elections or Published Results
+        ↓
+Render Tenant-Branded Portal
+```
+
+---
+
+# 7. PLATFORM ADMIN VERSUS TENANT ADMIN
+
+VoteWise must separate platform administration from tenant administration.
+
+## 7.1 Platform super-admin
+
+Hosted at:
+
+```text
+admin.votewise.com.ng
+```
+
+Responsibilities:
+
+* Manage all organizations
+* approve or suspend organizations
+* manage plans and subscriptions
+* view platform-level health
+* manage reserved subdomains
+* manage custom-domain status
+* monitor security incidents
+* manage global configuration
+* access platform audit events
+* manage global notification providers
+* manage feature flags
+* assist tenants through controlled support access
+* manage abuse and compliance incidents
+
+A platform administrator must not automatically see individual ballot selections.
+
+Platform-wide access must still follow strict authorization and audit rules.
+
+## 7.2 Tenant administrator
+
+Hosted inside the organization workspace, for example:
+
+```text
+acme.votewise.com.ng/admin
+```
+
+or through an authenticated tenant dashboard.
+
+Responsibilities:
+
+* Manage the organization profile
+* manage organization branding
+* manage tenant administrators
+* create elections
+* configure election rules
+* import or manage voters
+* manage candidates
+* monitor elections
+* certify and publish results
+* access tenant reports
+* view tenant audit logs
+* configure tenant integrations
+
+Tenant administrators must be restricted to their own organization.
+
+## 7.3 Election-specific officials
+
+Tenants must be able to assign election-specific roles, such as:
+
+* Election creator
+* Election manager
+* Voter registrar
+* Candidate manager
+* Observer
+* Auditor
+* Returning officer
+* Result certifier
+* Result publisher
+* Support officer
+
+A user may have a role in one election without receiving unrestricted access to every election belonging to the tenant.
+
+---
+
+# 8. FLEXIBLE ORGANIZATION STRUCTURE
+
+Different tenants use different organizational structures.
+
+Examples:
+
+## University
+
+```text
+Organization
+ ├── Faculty
+ ├── Department
+ ├── Programme
+ └── Level
+```
+
+## Company
+
+```text
+Organization
+ ├── Division
+ ├── Department
+ ├── Branch
+ └── Employment category
+```
+
+## Church
+
+```text
+Organization
+ ├── Region
+ ├── Province
+ ├── Zone
+ ├── Parish
+ └── Membership group
+```
+
+## Association
+
+```text
+Organization
+ ├── Chapter
+ ├── Branch
+ ├── Committee
+ └── Membership class
+```
+
+Therefore, do not hard-code only faculty and department fields.
+
+Create a generalized organizational-unit model.
+
+Recommended table:
+
+```text
+organization_units
+```
+
+Suggested fields:
+
+```text
+id
+organization_id
+parent_unit_id
+unit_type
+name
+slug
+description
+metadata
+status
+created_at
+updated_at
+```
+
+Examples of `unit_type`:
+
+```text
+faculty
+department
+branch
+division
+chapter
+region
+province
+zone
+parish
+committee
+constituency
+class
+level
+location
+custom
+```
+
+Allow tenants to define their own unit types where appropriate.
+
+---
+
+# 9. FLEXIBLE MEMBER AND VOTER ATTRIBUTES
+
+Do not assume all voters are students.
+
+Use generalized entities:
+
+```text
+organization_members
+voter_profiles
+member_attributes
+```
+
+Recommended member fields:
+
+```text
+id
+organization_id
+user_id
+membership_identifier
+normalized_membership_identifier
+first_name
+last_name
+email
+phone
+status
+joined_at
+verified_at
+created_at
+updated_at
+```
+
+Additional tenant-specific information can use:
+
+```text
+member_attribute_definitions
+member_attribute_values
+```
+
+Example custom fields:
+
+* Matriculation number
+* Employee number
+* Membership number
+* Branch
+* Faculty
+* Department
+* Job grade
+* Region
+* Chapter
+* Parish
+* Ward
+* Constituency
+* Membership class
+* Year of admission
+* Employment type
+
+Custom fields must have:
+
+* Type validation
+* required or optional status
+* uniqueness rules
+* visibility rules
+* eligibility usage rules
+* export rules
+* privacy classification
+
+---
+
+# 10. FLEXIBLE ELECTION TYPES
+
+VoteWise must support more than candidate elections.
+
+Supported election or voting formats should include:
+
+* Single-choice election
+* Multiple-choice election
+* Yes or no vote
+* Referendum
+* Resolution voting
+* Ranked-choice election where formally implemented
+* Approval voting where formally implemented
+* Nomination
+* Appointment confirmation
+* Poll
+* Survey-like ballot where appropriate
+* Committee election
+* Board election
+* Executive election
+* Shareholder resolution
+* Delegate election
+* Constituency election
+
+Do not claim support for an election method unless its counting logic, validation, testing, and documentation are complete.
+
+Recommended election types:
+
+```text
+CANDIDATE_ELECTION
+REFERENDUM
+RESOLUTION
+NOMINATION
+POLL
+APPOINTMENT
+```
+
+Recommended contest voting methods:
+
+```text
+SINGLE_CHOICE
+MULTIPLE_CHOICE
+YES_NO
+APPROVAL
+RANKED_CHOICE
+```
+
+Unsupported methods must be disabled rather than partially implemented.
+
+---
+
+# 11. TENANT BRANDING
+
+Each organization must be able to configure:
+
+* Organization name
+* Short name
+* Logo
+* Favicon
+* Primary colour
+* Secondary colour
+* Accent colour
+* Typography selection from approved options
+* Login-page imagery
+* Election banner
+* Footer content
+* Support email
+* Support phone
+* Social links
+* Privacy-policy link
+* Terms link
+* Default language
+* Timezone
+* Date format
+
+Recommended table:
+
+```text
+organization_branding
+```
+
+Suggested fields:
+
+```text
+organization_id
+logo_url
+favicon_url
+primary_color
+secondary_color
+accent_color
+font_family
+login_background_url
+support_email
+support_phone
+privacy_url
+terms_url
+custom_footer
+updated_at
+```
+
+Branding must be applied after trusted tenant resolution.
+
+Never allow tenant-provided styles or HTML to execute arbitrary scripts.
+
+Validate:
+
+* Colour formats
+* image types
+* image dimensions
+* image size
+* text length
+* URL protocols
+* HTML content where allowed
+
+---
+
+# 12. TENANT ONBOARDING FLOW
+
+Organization onboarding should follow this workflow:
+
+```text
+Organization registration
+        ↓
+Email verification
+        ↓
+Organization information
+        ↓
+Organization type
+        ↓
+Subdomain selection
+        ↓
+Subdomain availability validation
+        ↓
+Plan selection
+        ↓
+Organization administrator creation
+        ↓
+Branding setup
+        ↓
+Security setup
+        ↓
+Workspace provisioning
+        ↓
+Onboarding checklist
+        ↓
+First election creation
+```
+
+Validate tenant slugs using rules such as:
+
+* Lowercase letters
+* numbers
+* hyphens
+* no spaces
+* no leading hyphen
+* no trailing hyphen
+* reasonable minimum and maximum length
+* no reserved words
+* no offensive or deceptive terms
+* globally unique
+* cannot impersonate VoteWise or another organization
+
+Example valid slugs:
+
+```text
+unilag
+acme
+nma-enugu
+rccg-region10
+engineers-association
+```
+
+Example invalid slugs:
+
+```text
+admin
+api
+vote wise
+-acme
+acme-
+ACME!
+www
+```
+
+Subdomain allocation must be performed transactionally to prevent two organizations from receiving the same slug.
+
+---
+
+# 13. TENANT LIFECYCLE
+
+Organizations should have explicit states:
+
+```text
+PENDING_VERIFICATION
+ONBOARDING
+ACTIVE
+PAST_DUE
+RESTRICTED
+SUSPENDED
+ARCHIVED
+DELETED
+```
+
+Behaviour:
+
+## `PENDING_VERIFICATION`
+
+* No production election access
+* only onboarding and verification routes
+
+## `ONBOARDING`
+
+* Workspace exists
+* election capabilities may be limited
+
+## `ACTIVE`
+
+* Full permitted functionality
+
+## `PAST_DUE`
+
+* Apply plan-specific grace-period rules
+* never disrupt an active election irresponsibly
+
+## `RESTRICTED`
+
+* Selected functionality disabled
+* existing records preserved
+
+## `SUSPENDED`
+
+* Tenant workspace unavailable except authorized recovery routes
+* preserve election evidence and audit logs
+
+## `ARCHIVED`
+
+* Read-only according to retention policy
+
+## `DELETED`
+
+* Use controlled deletion and retention procedures
+* do not silently delete legally required election records
+
+Suspending an organization during an active election must require a controlled platform-level process and audit record.
+
+---
+
+# 14. MULTI-TENANT DATABASE ARCHITECTURE
+
+Every tenant-owned record must be associated with an organization.
+
+Core tables should include `organization_id` directly or inherit organization ownership through a strongly constrained relationship.
+
+Examples:
+
+```text
+organizations
+organization_domains
+organization_branding
+organization_settings
+organization_units
+organization_members
+organization_roles
+organization_integrations
+
+elections
+positions
+candidates
+voters
+voter_eligibility
+voter_imports
+ballots
+vote_participation
+result_snapshots
+reports
+audit_events
+notifications
+```
+
+Every tenant-owned table must enforce organization consistency.
+
+For example:
+
+* A candidate’s organization must match the election’s organization.
+* A voter’s organization must match the election eligibility organization.
+* A position must belong to the same organization as its election.
+* A result snapshot must belong to the same organization as its election.
+* An organization administrator may not reference another tenant’s election.
+
+Use composite foreign keys or database functions where necessary to prevent cross-tenant associations.
+
+---
+
+# 15. ROW-LEVEL SECURITY FOR MULTI-TENANCY
+
+RLS must enforce tenant isolation.
+
+Do not use frontend filtering as the primary tenant-isolation control.
+
+Policies must verify:
+
+* Authenticated user identity
+* Organization membership
+* Organization role
+* Resource organization
+* Election assignment
+* Record state
+* Required permission
+
+Conceptual tenant policy:
+
+```text
+A user may access a tenant-owned record only when:
+
+record.organization_id belongs to an active membership for auth.uid()
+
+AND
+
+the membership or election assignment grants the requested action
+```
+
+Test every policy using:
+
+* Tenant A voter
+* Tenant A administrator
+* Tenant A election official
+* Tenant B voter
+* Tenant B administrator
+* Platform administrator
+* Suspended tenant member
+* Revoked member
+* Anonymous user
+
+Mandatory negative tests:
+
+* Tenant A cannot query Tenant B voters.
+* Tenant A cannot query Tenant B elections.
+* Tenant A cannot update Tenant B candidates.
+* Tenant A cannot view Tenant B reports.
+* Tenant A cannot access Tenant B storage.
+* A tenant administrator cannot become a platform administrator.
+* Changing `organization_id` in a request must not bypass isolation.
+* Changing the browser hostname must not grant membership.
+
+---
+
+# 16. AUTHENTICATION ACROSS SUBDOMAINS
+
+Define the authentication model deliberately.
+
+Potential approaches:
+
+## Option A: Centralized authentication
+
+Users authenticate through:
+
+```text
+auth.votewise.com.ng
+```
+
+and are redirected back to their tenant workspace.
+
+Benefits:
+
+* Consistent authentication flow
+* easier account recovery
+* centralized MFA
+* centralized session management
+
+Risks requiring careful implementation:
+
+* redirect validation
+* cookie scope
+* cross-subdomain session behaviour
+* CSRF
+* tenant confusion
+* open redirects
+
+## Option B: Tenant-local authentication pages
+
+Users authenticate directly on:
+
+```text
+acme.votewise.com.ng/login
+```
+
+The backend resolves the tenant before authenticating or assigning tenant access.
+
+Whichever approach is used:
+
+* Verify the user’s organization membership.
+* Do not treat a valid VoteWise account as automatic membership in every tenant.
+* Do not automatically expose all organizations to every user.
+* Prevent tenant enumeration where necessary.
+* Validate post-login redirects.
+* securely scope cookies.
+* revoke sessions after membership removal or security incidents.
+
+A user may belong to multiple organizations.
+
+The account model must support:
+
+```text
+One user account
+    ↓
+Multiple organization memberships
+    ↓
+Different roles in each organization
+```
+
+Example:
+
+```text
+User A
+ ├── Acme Ltd — Election Manager
+ ├── NMA Enugu — Voter
+ └── Community Union — Auditor
+```
+
+Roles must be membership-scoped, not globally applied.
+
+---
+
+# 17. TENANT-SCOPED AUTHORIZATION
+
+Authorization must evaluate:
+
+```text
+User
+Organization membership
+Organization role
+Election assignment
+Requested action
+Target resource
+Election state
+Tenant state
+MFA state
+```
+
+Conceptual authorization:
+
+```ts
+authorize({
+  actor,
+  tenant,
+  action,
+  resource,
+  election
+})
+```
+
+Examples:
+
+```text
+organization.settings.update
+organization.branding.update
+organization.member.import
+organization.admin.invite
+
+election.create
+election.configure
+election.publish
+election.open
+election.pause
+election.close
+
+candidate.create
+candidate.approve
+candidate.disqualify
+
+voter.read
+voter.import
+voter.update
+voter.suspend
+
+results.review
+results.certify
+results.publish
+
+audit.read
+report.export
+```
+
+Do not implement authorization using only checks such as:
+
+```ts
+if (user.role === "admin")
+```
+
+The system must know:
+
+* Admin of which organization?
+* Admin for which election?
+* Authorized for which action?
+* Is the tenant active?
+* Is the election in a valid state?
+* Does the action require MFA or recent authentication?
+
+---
+
+# 18. ORGANIZATION PORTAL STRUCTURE
+
+Each tenant workspace should support routes such as:
+
+```text
+{tenant}.votewise.com.ng/
+{tenant}.votewise.com.ng/elections
+{tenant}.votewise.com.ng/elections/[electionSlug]
+{tenant}.votewise.com.ng/elections/[electionSlug]/candidates
+{tenant}.votewise.com.ng/elections/[electionSlug]/vote
+{tenant}.votewise.com.ng/elections/[electionSlug]/results
+
+{tenant}.votewise.com.ng/login
+{tenant}.votewise.com.ng/register
+{tenant}.votewise.com.ng/verify
+{tenant}.votewise.com.ng/dashboard
+{tenant}.votewise.com.ng/profile
+{tenant}.votewise.com.ng/help
+
+{tenant}.votewise.com.ng/admin
+{tenant}.votewise.com.ng/admin/elections
+{tenant}.votewise.com.ng/admin/members
+{tenant}.votewise.com.ng/admin/voters
+{tenant}.votewise.com.ng/admin/candidates
+{tenant}.votewise.com.ng/admin/results
+{tenant}.votewise.com.ng/admin/audit
+{tenant}.votewise.com.ng/admin/settings
+{tenant}.votewise.com.ng/admin/branding
+{tenant}.votewise.com.ng/admin/security
+{tenant}.votewise.com.ng/admin/integrations
+```
+
+The platform may alternatively host tenant administration in a dedicated authenticated app, but every request must retain explicit tenant context.
+
+---
+
+# 19. PLATFORM ADMIN ROUTES
+
+The VoteWise platform administration portal should include:
+
+```text
+admin.votewise.com.ng/login
+admin.votewise.com.ng/dashboard
+admin.votewise.com.ng/organizations
+admin.votewise.com.ng/organizations/[organizationId]
+admin.votewise.com.ng/domains
+admin.votewise.com.ng/subdomains
+admin.votewise.com.ng/plans
+admin.votewise.com.ng/subscriptions
+admin.votewise.com.ng/elections
+admin.votewise.com.ng/incidents
+admin.votewise.com.ng/security
+admin.votewise.com.ng/audit
+admin.votewise.com.ng/providers
+admin.votewise.com.ng/feature-flags
+admin.votewise.com.ng/system-health
+```
+
+The platform admin portal must never be confused with tenant administration.
+
+---
+
+# 20. TENANT-SPECIFIC CONFIGURATION
+
+Create organization settings for:
+
+* Organization type
+* Default timezone
+* Supported languages
+* Date and time format
+* Member terminology
+* Voter terminology
+* Candidate terminology
+* Election terminology
+* Default election rules
+* Authentication policy
+* MFA requirements
+* Voter verification method
+* Email provider settings
+* SMS provider settings
+* Result visibility defaults
+* Turnout visibility defaults
+* Privacy settings
+* Data retention
+* Custom fields
+* Branding
+* Support contacts
+
+Example terminology configuration:
+
+## University
+
+```text
+Member = Student
+Membership ID = Matriculation Number
+Organizational Unit = Department
+```
+
+## Company
+
+```text
+Member = Employee
+Membership ID = Employee Number
+Organizational Unit = Division
+```
+
+## Association
+
+```text
+Member = Member
+Membership ID = Membership Number
+Organizational Unit = Chapter
+```
+
+The platform may present familiar tenant terminology without altering the underlying generalized data model.
+
+---
+
+# 21. ELECTION ELIGIBILITY ENGINE
+
+Eligibility must be configurable and must not be restricted to academic attributes.
+
+Potential eligibility rules:
+
+* Organization membership
+* Membership status
+* Organizational unit
+* Geographic region
+* Branch or chapter
+* Employment type
+* Membership category
+* Membership start date
+* Membership expiry date
+* Age requirement where legally appropriate
+* Verified email
+* Verified phone
+* Paid dues status where legally and contractually appropriate
+* Custom member attribute
+* Explicit voter register inclusion
+* Constituency assignment
+* Candidate category
+* Election-specific whitelist
+* Election-specific exclusion
+
+Create a rules-based eligibility model rather than hard-coded conditions.
+
+Example:
+
+```text
+Eligible when:
+
+membership.status = ACTIVE
+
+AND
+
+member.branch IN ["Enugu", "Ebonyi"]
+
+AND
+
+member.membership_class = "FULL_MEMBER"
+
+AND
+
+member.dues_status = "PAID"
+
+AND
+
+member.id appears in election voter register
+```
+
+All eligibility decisions must be reproducible and auditable.
+
+---
+
+# 22. DATA ISOLATION IN FILE STORAGE
+
+Tenant isolation must apply to storage as well as database records.
+
+Use tenant-scoped paths:
+
+```text
+organizations/{organizationId}/branding/
+organizations/{organizationId}/candidates/
+organizations/{organizationId}/imports/
+organizations/{organizationId}/exports/
+organizations/{organizationId}/reports/
+organizations/{organizationId}/incidents/
+```
+
+Storage access must validate:
+
+* User identity
+* Organization membership
+* Role
+* File purpose
+* File sensitivity
+* Tenant ownership
+
+Do not rely only on difficult-to-guess file paths.
+
+Voter import files and private reports must never be publicly accessible.
+
+---
+
+# 23. TENANT-SCOPED AUDIT LOGS
+
+Every relevant audit event must include:
+
+```text
+organization_id
+election_id where applicable
+actor_id
+actor_membership_id
+actor_role
+action
+target_type
+target_id
+hostname
+request_id
+timestamp
+outcome
+previous_value
+new_value
+reason
+```
+
+Platform-level actions must distinguish:
+
+```text
+PLATFORM_ACTION
+TENANT_ACTION
+SUPPORT_ACTION
+SYSTEM_ACTION
+```
+
+If a VoteWise platform employee accesses a tenant through an approved support mechanism, record:
+
+* Who accessed
+* Which tenant
+* Why
+* Who approved
+* What records were viewed
+* What actions were taken
+* When access started
+* When access ended
+
+---
+
+# 24. TENANT-SCOPED OBSERVABILITY
+
+Metrics should support platform and tenant context without exposing private information.
+
+Monitor:
+
+* Requests per tenant
+* active elections per tenant
+* vote-submission success per election
+* authentication failures
+* OTP failures
+* import failures
+* notification failures
+* unusual traffic
+* tenant-specific rate-limit events
+* custom-domain errors
+* unresolved subdomains
+* database saturation
+* platform-wide failures
+
+Do not expose one tenant’s metrics to another tenant.
+
+Platform operators may access aggregate metrics subject to privacy and security controls.
+
+---
+
+# 25. BILLING AND PLAN ARCHITECTURE
+
+Prepare the architecture for SaaS plans even if billing is introduced later.
+
+Possible limits:
+
+* Number of active elections
+* Number of registered voters
+* Number of administrators
+* Number of custom domains
+* Number of SMS messages
+* Number of exports
+* Data-retention duration
+* White-label branding
+* Advanced security
+* API access
+* SSO
+* Dedicated support
+* Advanced audit reports
+
+Recommended entities:
+
+```text
+plans
+plan_features
+organization_subscriptions
+organization_usage
+billing_events
+invoices
+```
+
+Plan checks must never corrupt or interrupt accepted votes.
+
+An organization reaching a commercial limit during an active election must be handled through a defined grace and escalation process.
+
+Billing state must not permit ballot manipulation or data loss.
+
+---
+
+# 26. WILDCARD DNS AND VERCEL ARCHITECTURE
+
+The previous VPS example correctly explains the logical wildcard-domain model, but VoteWise is currently intended to use Vercel and Supabase.
+
+For Vercel deployment, the architecture should conceptually be:
+
+```text
+Cloudflare DNS
+        ↓
+Vercel
+        ↓
+VoteWise hostname middleware
+        ↓
+Tenant resolver
+        ↓
+Organization portal
+        ↓
+Supabase
+```
+
+DNS records should ultimately point to the values provided by the actual Vercel project configuration.
+
+Do not use placeholder VPS IP records when deploying to Vercel.
+
+The required hostnames remain:
+
+```text
+votewise.com.ng
+www.votewise.com.ng
+admin.votewise.com.ng
+api.votewise.com.ng
+docs.votewise.com.ng
+status.votewise.com.ng
+*.votewise.com.ng
+```
+
+The wildcard domain must be configured in:
+
+1. Cloudflare DNS
+2. Vercel project domains
+3. Application hostname middleware
+4. Tenant database resolution
+5. TLS and domain validation
+6. Testing for reserved subdomains
+
+Cloudflare handles DNS and edge security.
+
+Vercel hosts and routes the application.
+
+Supabase provides the database, authentication, storage, and related backend services.
+
+The application resolves each hostname to the correct organization.
+
+---
+
+# 27. VERCEL APPLICATION OPTIONS
+
+The builder should evaluate two valid deployment approaches.
+
+## Option A: One multi-tenant Next.js application
+
+```text
+votewise.com.ng
+*.votewise.com.ng
+```
+
+served by one primary application.
+
+The application uses middleware and hostname routing to render:
+
+* Marketing website
+* Organization portals
+* Tenant administration
+
+Separate Vercel projects may still host:
+
+* Platform admin
+* API
+* Docs
+* Status
+
+Advantages:
+
+* Shared deployment
+* shared components
+* easier wildcard routing
+* simpler tenant portal management
+
+## Option B: Multiple applications
+
+Separate projects:
+
+```text
+marketing application
+tenant portal application
+platform admin application
+API application
+documentation application
+status application
+```
+
+Cloudflare and Vercel route hostnames to the correct project.
+
+Advantages:
+
+* Stronger application boundaries
+* separate deployment cycles
+* separate scaling
+* reduced blast radius
+
+Disadvantages:
+
+* More infrastructure
+* more environment management
+* shared authentication complexity
+* more deployment coordination
+
+The builder must inspect the existing repository before choosing.
+
+Do not split applications without a clear operational benefit.
+
+---
+
+# 28. TENANT MIDDLEWARE EXAMPLE
+
+Implement the equivalent of the following conceptually:
+
+```ts
+export async function middleware(request: NextRequest) {
+  const hostname = normalizeHostname(
+    request.headers.get("host")
+  );
+
+  const routeType = classifyHostname(hostname);
+
+  if (routeType.kind === "reserved-platform-host") {
+    return handlePlatformRequest(request, routeType);
+  }
+
+  if (routeType.kind === "tenant-subdomain") {
+    const tenant = await resolveTenantBySlug(routeType.slug);
+
+    if (!tenant || tenant.status !== "ACTIVE") {
+      return renderTenantUnavailable();
+    }
+
+    return rewriteToTenantRoute(request, tenant);
+  }
+
+  if (routeType.kind === "custom-domain") {
+    const tenant = await resolveTenantByCustomDomain(hostname);
+
+    if (!tenant || tenant.status !== "ACTIVE") {
+      return renderTenantUnavailable();
+    }
+
+    return rewriteToTenantRoute(request, tenant);
+  }
+
+  return rejectUnknownHostname();
+}
+```
+
+This is a conceptual structure, not permission to place all tenant authorization inside middleware.
+
+Middleware resolves routing context.
+
+Backend services and database policies still enforce authorization and tenant isolation.
+
+---
+
+# 29. TENANT ROUTE REWRITING
+
+A public request such as:
+
+```text
+https://acme.votewise.com.ng/elections
+```
+
+may internally rewrite to:
+
+```text
+/_tenants/acme/elections
+```
+
+The browser should continue displaying:
+
+```text
+acme.votewise.com.ng/elections
+```
+
+Do not expose internal routing structure unnecessarily.
+
+The page must load tenant context using the resolved organization ID, not by trusting an arbitrary route parameter alone.
+
+---
+
+# 30. TENANT CACHE RULES
+
+Caching must never mix organizations.
+
+Every cache key must include:
+
+* Organization ID
+* Hostname
+* Resource ID
+* Resource version where applicable
+* Visibility level
+
+Example:
+
+```text
+tenant:{organizationId}:branding
+tenant:{organizationId}:public-elections
+tenant:{organizationId}:election:{electionId}
+tenant:{organizationId}:published-results:{snapshotId}
+```
+
+Never use unsafe keys such as:
+
+```text
+branding
+elections
+results
+```
+
+because they can produce cross-tenant data leakage.
+
+Private tenant data must use private or no-store caching as appropriate.
+
+---
+
+# 31. TENANT RATE LIMITING
+
+Rate limits should consider:
+
+* IP address
+* user account
+* organization
+* election
+* endpoint
+* action
+* device characteristics where appropriate
+
+Examples:
+
+```text
+OTP requests per account
+OTP requests per tenant
+Login attempts per account
+Login attempts per IP
+Vote submissions per voter and election
+Voter-search requests per admin
+Bulk exports per tenant
+Imports per tenant
+Public API requests per API key
+```
+
+One abusive tenant must not be allowed to exhaust platform resources for every other tenant.
+
+Apply tenant-aware quotas and platform-wide safety limits.
+
+---
+
+# 32. TENANT DELETION AND EXPORT
+
+Provide controlled organization data export and account closure.
+
+Before deleting or archiving a tenant:
+
+* Verify authority
+* require reauthentication
+* require a reason
+* identify active elections
+* preserve required legal records
+* export required data
+* revoke custom domains
+* revoke API keys
+* revoke active sessions
+* disable integrations
+* stop scheduled jobs
+* apply retention policy
+* record an immutable audit event
+
+Tenant deletion must never happen through an unconfirmed single click.
+
+---
+
+# 33. REQUIRED DATABASE TABLES FOR MULTI-TENANCY
+
+At minimum, evaluate the need for:
+
+```text
+organizations
+organization_domains
+organization_branding
+organization_settings
+organization_units
+organization_unit_types
+organization_members
+organization_invitations
+organization_roles
+organization_permissions
+organization_role_permissions
+organization_member_roles
+organization_integrations
+organization_subscriptions
+organization_usage
+organization_feature_flags
+
+users or profiles
+user_sessions
+security_events
+
+elections
+election_assignments
+election_roles
+election_role_assignments
+election_settings
+election_state_history
+
+member_attribute_definitions
+member_attribute_values
+
+voter_registries
+voters
+voter_eligibility
+voter_imports
+voter_import_rows
+
+positions
+contests
+candidates
+candidate_documents
+
+ballots
+ballot_selections
+vote_participation
+vote_receipts
+idempotency_records
+
+result_snapshots
+result_entries
+result_certifications
+
+notifications
+notification_deliveries
+webhook_events
+reports
+exports
+audit_events
+system_incidents
+```
+
+Adapt the schema to the existing repository.
+
+Do not create redundant tables merely to satisfy naming.
+
+---
+
+# 34. REQUIRED ARCHITECTURE DIAGRAM
+
+The final target should resemble:
+
+```text
+                         INTERNET
+                             │
+                             ▼
+                    CLOUDFLARE DNS/WAF
+                             │
+          ┌──────────────────┼───────────────────┐
+          │                  │                   │
+          ▼                  ▼                   ▼
+ votewise.com.ng    admin.votewise.com.ng   *.votewise.com.ng
+ Marketing Site      Platform Admin          Tenant Portals
+          │                  │                   │
+          └──────────────────┼───────────────────┘
+                             ▼
+                     VERCEL APPLICATIONS
+                             │
+                             ▼
+                  HOSTNAME/TENANT RESOLVER
+                             │
+                 ┌───────────┴───────────┐
+                 │                       │
+                 ▼                       ▼
+          PLATFORM CONTEXT          TENANT CONTEXT
+                 │                       │
+                 └───────────┬───────────┘
+                             ▼
+                  AUTHENTICATION LAYER
+                             │
+                             ▼
+                   AUTHORIZATION LAYER
+                             │
+                             ▼
+                     DOMAIN SERVICES
+                             │
+                             ▼
+                      SUPABASE API
+                             │
+          ┌──────────────────┼──────────────────┐
+          ▼                  ▼                  ▼
+      PostgreSQL           Auth              Storage
+          │
+          ▼
+   RLS + Constraints +
+   Atomic Functions +
+   Audit Logs
+```
+
+---
+
+# 35. REQUIRED BUILDER DELIVERABLES
+
+Before further implementation, the AI builder must produce:
+
+1. Current tenant architecture
+2. Current hostname-routing implementation
+3. Current organization model
+4. Current organization-member model
+5. Current database tenant-isolation strategy
+6. Current RLS policies
+7. Current platform-admin and tenant-admin separation
+8. Current organization onboarding flow
+9. Current subdomain allocation logic
+10. Current branding architecture
+11. Current organizational-unit model
+12. Current custom-field model
+13. Current flexible election-type support
+14. Current custom-domain readiness
+15. Identified cross-tenant leakage risks
+16. Proposed target architecture
+17. Migration plan
+18. Test plan
+19. Rollback plan
+20. Production blockers
+
+---
+
+# 36. REQUIRED MULTI-TENANT TESTS
+
+Automated tests must prove:
+
+## Host routing
+
+* Root domain loads marketing site.
+* `www` behaves correctly.
+* `admin` loads platform administration.
+* `api` loads the API.
+* `docs` loads documentation.
+* `status` loads the status site.
+* Valid tenant subdomains load the correct tenant.
+* Unknown tenants show a safe unavailable page.
+* Suspended tenants are blocked appropriately.
+* Reserved subdomains cannot become tenants.
+* Custom domains resolve only after verification.
+
+## Data isolation
+
+* Tenant A cannot access Tenant B records.
+* Tenant A cannot access Tenant B files.
+* Tenant A cannot alter Tenant B election.
+* Tenant A cannot query Tenant B results before publication.
+* Tenant A cannot assign itself Tenant B roles.
+* Tenant A cannot use modified request payloads to cross tenants.
+* Tenant A cannot access Tenant B data by changing the hostname.
+* Platform support access is explicitly authorized and audited.
+
+## Cache isolation
+
+* Branding does not leak across tenants.
+* Election lists do not leak across tenants.
+* Results do not leak across tenants.
+* Authentication state is not confused across tenants.
+* CDN caching does not serve one tenant’s private page to another.
+
+## Authentication
+
+* A user can belong to multiple tenants.
+* A user’s role differs correctly by tenant.
+* Removal from one tenant does not remove unrelated memberships.
+* A user cannot use one tenant’s session context to obtain another tenant’s privileges.
+* Redirects return only to approved tenant hosts.
+
+## Organization configuration
+
+* Different tenants can use different terminology.
+* Different tenants can use different organizational structures.
+* Different tenants can define different custom fields.
+* Different tenants can use separate branding.
+* Tenant settings remain isolated.
+
+---
+
+# 37. CORRECTED FINAL INSTRUCTION TO THE AI BUILDER
+
+VoteWise must be implemented as a generalized multi-tenant voting and election SaaS platform.
+
+Do not treat universities, faculties, departments, students, or matriculation numbers as universal system concepts.
+
+Instead:
+
+* Use organizations as tenants.
+* assign each organization a unique subdomain.
+* resolve the tenant from the hostname.
+* isolate tenant data with database constraints and RLS.
+* separate platform administration from tenant administration.
+* support flexible organizational units.
+* support configurable member attributes.
+* support multiple election types.
+* support tenant-specific branding.
+* support users belonging to multiple organizations.
+* scope roles and permissions to organizations and elections.
+* reserve system subdomains.
+* prepare for verified custom domains.
+* enforce tenant-aware caching, storage, rate limiting, logs, metrics, exports, and background jobs.
+
+The default tenant URL structure is:
+
+```text
+{organizationSlug}.votewise.com.ng
+```
+
+Examples:
+
+```text
+unilag.votewise.com.ng
+company.votewise.com.ng
+church.votewise.com.ng
+association.votewise.com.ng
+```
+
+New organization registration must provision the organization workspace automatically without manual DNS changes.
+
+Wildcard DNS only sends traffic to the application.
+
+The application must then:
+
+```text
+Read hostname
+    ↓
+Validate hostname
+    ↓
+Extract tenant slug
+    ↓
+Resolve organization
+    ↓
+Verify organization status
+    ↓
+Load tenant configuration
+    ↓
+Authenticate user where required
+    ↓
+Verify tenant membership
+    ↓
+Enforce tenant-scoped authorization
+    ↓
+Query only tenant-owned data
+    ↓
+Render the tenant portal
+```
+
+Before changing the implementation, inspect the existing repository and identify every location where the application incorrectly assumes VoteWise is only for schools.
+
+Replace hard-coded education-specific architecture with configurable, generalized organization structures while preserving optional school-specific configuration for educational tenants.
+
+Do not declare the multi-tenant architecture complete until hostname routing, database isolation, RLS isolation, storage isolation, cache isolation, authentication scoping, role scoping, custom branding, tenant onboarding, and cross-tenant security tests all pass.
+
+The major correction is this distinction:
+
+```text
+admin.votewise.com.ng
+```
+
+is the **VoteWise platform administration portal**, while:
+
+```text
+acme.votewise.com.ng/admin
+```
+
+is the **Acme tenant administration portal**.
+
+Also, because your target deployment is **Vercel plus Supabase**, the VPS IP and Nginx section in the pasted guide should not be applied literally. The wildcard-domain concept remains correct, but Cloudflare must point to the hostname or DNS target Vercel provides, and the tenant routing should be handled through Vercel and the VoteWise application’s hostname-resolution layer.

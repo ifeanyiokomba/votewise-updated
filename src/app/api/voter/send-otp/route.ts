@@ -6,6 +6,7 @@ import { HttpError } from "@/lib/guards";
 import { RATE_LIMITS } from "@/lib/ratelimit";
 import { sha256, generateOtp } from "@/lib/sve/crypto";
 import { SVE_SECRETS, isProduction } from "@/lib/secrets";
+import { deliverOtp, type DeliveryChannel } from "@/lib/notifications";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -56,13 +57,26 @@ export const POST = api(async (req) => {
     },
   });
 
-  // Delivery — in sandbox we log + return devOtp; in prod we'd call Resend/Termii.
-  const channel = voter.email ? "EMAIL" : voter.phone ? "SMS" : "EMAIL";
-  if (!isProduction()) {
-    console.log(`[VoteWise dev OTP] org=${org.subdomain} identifier=${input.identifier} code=${code}`);
-    return ok({ sent: true, channel, devOtp: code });
+  // Determine delivery channel and destination
+  const channel: DeliveryChannel = voter.email ? "EMAIL" : voter.phone ? "SMS" : "EMAIL";
+  const destination = voter.email ?? voter.phone ?? "";
+
+  // Deliver OTP via real provider (Resend/Termii) in production, console.log in dev
+  const result = await deliverOtp({
+    channel,
+    to: destination,
+    code,
+    orgName: org.name,
+  });
+
+  if (!result.success) {
+    console.error(`[VoteWise] OTP delivery failed for ${destination}: ${result.error}`);
+    // Don't expose the error to the client — just return a generic message
+    return ok({ sent: false, channel, devOtp: null });
   }
-  // production: fire delivery (extension point)
-  console.log(`[VoteWise] OTP delivered to ${voter.email ?? voter.phone} via ${channel}`);
-  return ok({ sent: true, channel, devOtp: null });
+
+  // In dev mode, deliverOtp returns the code for testing
+  const devOtp = !isProduction() ? code : null;
+
+  return ok({ sent: true, channel, devOtp });
 });

@@ -17,7 +17,7 @@ interface StatusData {
 
 interface SetupData {
   ok: boolean;
-  data: { secret: string; otpauthUrl: string; qrCodeUrl: string };
+  data: { secret: string; otpauthUrl: string; qrCodeDataUrl: string };
 }
 
 export default function SecurityPage() {
@@ -127,7 +127,7 @@ export default function SecurityPage() {
                 Open your authenticator app (Google Authenticator, Authy, 1Password) and scan this code:
               </p>
               <div className="flex justify-center">
-                <img src={setupData.qrCodeUrl} alt="2FA QR Code" className="rounded-lg border border-border" width={200} height={200} />
+                <img src={setupData.qrCodeDataUrl} alt="2FA QR Code" className="rounded-lg border border-border" width={200} height={200} />
               </div>
               <div className="mt-4">
                 <Label className="text-xs text-muted-foreground">Or enter this code manually:</Label>
